@@ -33,6 +33,11 @@ Teach a live, explainable Retrieval-Augmented Generation (RAG) workflow over uni
 
 ## Deferred work (intentionally not implemented)
 
-- Streamlit or Reflex web UI
-- LangChain/LangGraph RAG agents
 - Deployment
+
+## Web app and agent workflow
+
+- `app.py` is the Streamlit entry point. It provides a dark, workshop-friendly chat UI, a knowledge-base build control, citation chips, and a visible agent trace.
+- Reusable source code is in `src/rag_workshop/`.
+- The LangGraph workflow is bounded: retrieval → Groq evidence assessment → Groq answer writing → Groq citation review → at most one Groq revision. It returns the answer, source metadata, and an explainable execution trace.
+- The agent model defaults to `openai/gpt-oss-120b`; `RAG_AGENT_MODEL` in `.env` may override it.

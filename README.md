@@ -13,3 +13,15 @@ This project contains a student-friendly Jupyter notebook that builds a Retrieva
 The generated Chroma database lives under `vector_store/chroma/`. It is intentionally ignored by Git because it can be rebuilt from the PDFs. The notebook uses the current Google GenAI Python SDK (`google-genai`) through a small Chroma-compatible Gemini embedding adapter.
 
 The workshop notebook shows both a grounded `rag_search()` path and a baseline `plain_llm_search()` path so students can compare the impact of retrieval.
+
+## Web app and RAG agents
+
+The Streamlit app adds a visual interface and an inspectable LangGraph workflow: retrieve evidence → assess relevance → write answer → review citations → revise once if needed. All reasoning agents use Groq's `openai/gpt-oss-120b` by default.
+
+Start it after installing dependencies and adding API keys:
+
+```powershell
+streamlit run app.py
+```
+
+Use **Build knowledge base** in the sidebar to index the PDFs from `data/`. The app stores its persistent Chroma vectors in `vector_store/chroma/` and displays every retrieved source citation with the answer.
