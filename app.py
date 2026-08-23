@@ -13,7 +13,7 @@ from rag_workshop.config import Settings
 from rag_workshop.knowledge_base import SyllabusKnowledgeBase
 
 
-st.set_page_config(page_title="Syllabus Scout", page_icon="✦", layout="wide")
+st.set_page_config(page_title="Syllabus Scout", page_icon="🎓", layout="wide")
 
 
 @st.cache_resource(show_spinner=False)
@@ -53,7 +53,7 @@ def render_sources(citations: list[dict]) -> None:
 
 
 def render_message(message: dict) -> None:
-    with st.chat_message(message["role"], avatar="✦" if message["role"] == "assistant" else "🎓"):
+    with st.chat_message(message["role"], avatar="✨" if message["role"] == "assistant" else "🎓"):
         st.markdown(message["content"])
         if message["role"] == "assistant":
             render_sources(message.get("citations", []))
@@ -69,7 +69,7 @@ def answer_question(agent: SyllabusRAGAgent, question: str) -> None:
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user", avatar="🎓"):
         st.markdown(question)
-    with st.chat_message("assistant", avatar="✦"):
+    with st.chat_message("assistant", avatar="✨"):
         try:
             with st.spinner("Retrieving evidence, reasoning, and checking citations..."):
                 result = agent.ask(question)
