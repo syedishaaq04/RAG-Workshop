@@ -9,7 +9,8 @@ __pycache__/
 venv/
 
 # Local, regenerable RAG data
-vector_store/
+vector_store/*
+!vector_store/.gitkeep
 
 # Source documents may be licensed or large; keep them local.
 data/*.pdf
