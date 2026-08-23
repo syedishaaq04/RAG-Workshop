@@ -1,6 +1,8 @@
 """A Chroma embedding function backed by Google's maintained GenAI SDK."""
 
 import os
+import re
+import time
 
 from chromadb import Documents, EmbeddingFunction, Embeddings
 from google import genai
@@ -23,12 +25,38 @@ class GoogleGeminiEmbeddingFunction(EmbeddingFunction[Documents]):
         self._api_key_env_var = api_key_env_var
 
     def __call__(self, input: Documents) -> Embeddings:
-        response = self._client.models.embed_content(
-            model=self._model_name,
-            contents=list(input),
-            config=types.EmbedContentConfig(task_type=self._task_type),
-        )
-        return [embedding.values for embedding in response.embeddings]
+        contents = list(input)
+        if not contents:
+            return []
+
+        batch_size = 64  # Keep comfortably below Gemini's 100 items per request limit.
+        all_embeddings: list[list[float]] = []
+        for i in range(0, len(contents), batch_size):
+            batch = contents[i : i + batch_size]
+            max_retries = 8
+            for attempt in range(max_retries):
+                try:
+                    response = self._client.models.embed_content(
+                        model=self._model_name,
+                        contents=batch,
+                        config=types.EmbedContentConfig(task_type=self._task_type),
+                    )
+                    all_embeddings.extend(embedding.values for embedding in response.embeddings)
+                    break
+                except Exception as exc:
+                    err_str = str(exc)
+                    if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower()) and attempt < max_retries - 1:
+                        match = re.search(r"retry in ([\d\.]+)s", err_str, re.IGNORECASE)
+                        if match:
+                            sleep_time = float(match.group(1)) + 2.0
+                        else:
+                            sleep_time = max(25.0, 15.0 * (1.5 ** attempt))
+                        time.sleep(sleep_time)
+                    else:
+                        raise
+            if i + batch_size < len(contents):
+                time.sleep(1.0)
+        return all_embeddings
 
     @staticmethod
     def name() -> str:

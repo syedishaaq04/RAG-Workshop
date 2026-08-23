@@ -100,7 +100,13 @@ class SyllabusKnowledgeBase:
             documents.append(chunk.page_content)
             metadatas.append(metadata)
 
-        self.collection.add(ids=ids, documents=documents, metadatas=metadatas)
+        batch_size = 96
+        for i in range(0, len(chunks), batch_size):
+            self.collection.add(
+                ids=ids[i : i + batch_size],
+                documents=documents[i : i + batch_size],
+                metadatas=metadatas[i : i + batch_size],
+            )
         return len(chunks)
 
     def retrieve(self, query: str, k: int = 4) -> list[RetrievedChunk]:
