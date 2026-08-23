@@ -137,7 +137,7 @@ def main() -> None:
     metrics = st.columns(3)
     metrics[0].markdown(f'<div class="metric-card"><div class="metric-label">Indexed chunks</div><div class="metric-value">{knowledge_base.document_count}</div></div>', unsafe_allow_html=True)
     metrics[1].markdown(f'<div class="metric-card"><div class="metric-label">Source PDFs</div><div class="metric-value">{len(pdf_names)}</div></div>', unsafe_allow_html=True)
-    metrics[2].markdown('<div class="metric-card"><div class="metric-label">Agent pipeline</div><div class="metric-value">5 stages</div></div>', unsafe_allow_html=True)
+    metrics[2].markdown('<div class="metric-card"><div class="metric-label">Agent pipeline</div><div class="metric-value">6 stages</div></div>', unsafe_allow_html=True)
 
     st.markdown("### Conversation")
     if not st.session_state.messages:

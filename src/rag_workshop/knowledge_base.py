@@ -112,7 +112,7 @@ class SyllabusKnowledgeBase:
     def retrieve(
         self,
         query: str,
-        k: int = 4,
+        k: int = 8,
         source_files: list[str] | None = None,
     ) -> list[RetrievedChunk]:
         if not query.strip():
@@ -127,7 +127,7 @@ class SyllabusKnowledgeBase:
             valid_targets = [s for s in source_files if s in available_sources]
             if valid_targets:
                 chunks: list[RetrievedChunk] = []
-                per_source_k = max(2, min(k, 4))
+                per_source_k = max(3, min(k, 6))
                 for target_file in valid_targets:
                     try:
                         res = self.collection.query(

@@ -39,5 +39,5 @@ Teach a live, explainable Retrieval-Augmented Generation (RAG) workflow over uni
 
 - `app.py` is the Streamlit entry point. It provides a dark, workshop-friendly chat UI, a knowledge-base build control, citation chips, and a visible agent trace.
 - Reusable source code is in `src/rag_workshop/`.
-- The LangGraph workflow is bounded and 5-stage: router agent (determines relevant syllabus source PDFs dynamically) → multi-source balanced Chroma retrieval (using source_file metadata filters) → Groq evidence assessment → Groq answer writing → Groq citation review → at most one Groq revision. It returns the answer, source metadata, and an explainable execution trace.
+- The LangGraph workflow is bounded and 6-stage: router agent (determines relevant syllabus source PDFs dynamically) → broad multi-source candidate retrieval (with Chroma source_file metadata filters) → re-ranker agent (selects and orders highest-relevance chunks for specific topics/labs) → Groq evidence assessment → Groq answer writing → Groq citation review → at most one Groq revision. It returns the answer, source metadata, and an explainable execution trace.
 - The agent model defaults to `openai/gpt-oss-120b`; `RAG_AGENT_MODEL` in `.env` may override it.

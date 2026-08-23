@@ -37,6 +37,21 @@ class CitationReview(BaseModel):
         return data
 
 
+class RerankingResult(BaseModel):
+    ranked_indices: list[int] = Field(default_factory=list, description="Ordered list of 0-based candidate chunk indices from most to least relevant.")
+    reason: str = Field(default="Selected top relevant chunks for the question.", description="Explanation of why these chunks were chosen.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "ranked_indices" not in data:
+                data["ranked_indices"] = data.get("indices") or data.get("selected_chunks") or data.get("top_chunks") or []
+            if "reason" not in data:
+                data["reason"] = data.get("explanation") or data.get("justification") or "Reranked candidate excerpts."
+        return data
+
+
 class RoutingDecision(BaseModel):
     target_sources: list[str] = Field(default_factory=list, description="Target PDF filenames relevant to the question.")
     reason: str = Field(default="Searching all available sources.", description="Reason for routing decision.")
@@ -87,7 +102,7 @@ def _parse_json_result(text: str, model_cls: type[BaseModel]) -> BaseModel:
 
 
 class SyllabusRAGAgent:
-    """Orchestrates routing, retrieval, assessment, answer writing, and citation review."""
+    """Orchestrates routing, retrieval, re-ranking, assessment, answer writing, and citation review."""
 
     def __init__(self, knowledge_base: SyllabusKnowledgeBase, settings: Settings) -> None:
         self.knowledge_base = knowledge_base
@@ -121,9 +136,9 @@ class SyllabusRAGAgent:
                 "which syllabus PDF document(s) must be searched.\n\n"
                 f"Available syllabus documents in database:\n{pdf_list_formatted}\n\n"
                 "Routing rules:\n"
-                "1. If the question asks about a specific program (e.g. CSE or AIDS/AI), select only the matching PDF(s).\n"
-                "2. If the question asks about both/multiple programs, compares them, or asks a general question, select all relevant PDFs.\n"
-                "3. If unsure, select all available documents.\n\n"
+                "1. If the question explicitly restricts to a single program (e.g. 'in CSE syllabus only' or 'for AI-DS only'), select that specific matching PDF.\n"
+                "2. If the question asks a general syllabus question, course topic, lab experiments, regulation, or asks about multiple programs without explicitly restricting to one, select ALL available syllabus PDFs to ensure comprehensive evidence.\n"
+                "3. When in doubt, select all available documents.\n\n"
                 "You must respond with valid JSON with keys:\n"
                 "- 'target_sources': list of exact matching filenames from the available list\n"
                 "- 'reason': brief explanation of why these sources were selected\n\n"
@@ -143,11 +158,49 @@ class SyllabusRAGAgent:
 
     def _retrieve(self, state: AgentState) -> dict:
         targets = state.get("target_sources")
-        hits = [chunk.to_dict() for chunk in self.knowledge_base.retrieve(state["question"], source_files=targets)]
+        hits = [chunk.to_dict() for chunk in self.knowledge_base.retrieve(state["question"], k=10, source_files=targets)]
         sources_found = set(h["source_file"] for h in hits)
         return {
             "hits": hits,
-            "trace": self._trace(state, f"Retriever: Retrieved {len(hits)} syllabus excerpts across {len(sources_found)} document source(s)."),
+            "trace": self._trace(state, f"Retriever: Fetched {len(hits)} candidate excerpts across {len(sources_found)} document source(s)."),
+        }
+
+    def _rerank(self, state: AgentState) -> dict:
+        candidates = state.get("hits", [])
+        if len(candidates) <= 4:
+            return {
+                "hits": candidates,
+                "trace": self._trace(state, f"Re-ranker: Candidate pool ({len(candidates)} chunks) directly passed to assessor."),
+            }
+
+        candidate_snippets = "\n\n".join(
+            f"CHUNK [{i}] {c['citation']}:\n{c['text'][:350]}..."
+            for i, c in enumerate(candidates)
+        )
+        response = self.evaluator.invoke([
+            HumanMessage(content=(
+                "You are an expert RAG Re-ranker Agent. Your goal is to select and order the most relevant chunks "
+                "from the candidate pool to answer the student's question accurately.\n\n"
+                f"Question: {state['question']}\n\n"
+                f"Candidate Chunks:\n{candidate_snippets}\n\n"
+                "Instructions:\n"
+                "1. Select the top 4-5 chunks that contain direct, specific evidence for the question (e.g. practical/lab experiments, exact regulations, course modules, eligibility criteria, etc.).\n"
+                "2. Order them from most relevant to least relevant.\n"
+                "3. Respond with valid JSON containing keys:\n"
+                "- 'ranked_indices': list of integer indices (e.g. [3, 0, 4, 1]) corresponding to the chosen chunks\n"
+                "- 'reason': brief explanation of why these specific chunks were selected\n"
+            ))
+        ])
+        decision = _parse_json_result(str(response.content), RerankingResult)
+        valid_indices = [idx for idx in decision.ranked_indices if 0 <= idx < len(candidates)]
+        if not valid_indices:
+            selected_hits = candidates[:5]
+        else:
+            selected_hits = [candidates[idx] for idx in valid_indices[:5]]
+
+        return {
+            "hits": selected_hits,
+            "trace": self._trace(state, f"Re-ranker agent: Selected top {len(selected_hits)} most relevant chunk(s) from {len(candidates)} candidates: {decision.reason}"),
         }
 
     def _assess(self, state: AgentState) -> dict:
@@ -229,6 +282,7 @@ class SyllabusRAGAgent:
         builder = StateGraph(AgentState)
         builder.add_node("route", self._route)
         builder.add_node("retrieve", self._retrieve)
+        builder.add_node("rerank", self._rerank)
         builder.add_node("assess", self._assess)
         builder.add_node("write", self._write)
         builder.add_node("review", self._review)
@@ -237,7 +291,8 @@ class SyllabusRAGAgent:
         builder.add_node("finalize", self._finalize)
         builder.add_edge(START, "route")
         builder.add_edge("route", "retrieve")
-        builder.add_edge("retrieve", "assess")
+        builder.add_edge("retrieve", "rerank")
+        builder.add_edge("rerank", "assess")
         builder.add_conditional_edges("assess", self._after_assessment)
         builder.add_edge("write", "review")
         builder.add_conditional_edges("review", self._after_review)
