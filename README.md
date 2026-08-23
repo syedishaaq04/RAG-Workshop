@@ -20,7 +20,7 @@ The workshop notebook shows both a grounded `rag_search()` path and a baseline `
 
 ## Web app and RAG agents
 
-The Streamlit app adds a visual interface and an inspectable LangGraph workflow: retrieve evidence → assess relevance → write answer → review citations → revise once if needed. All reasoning agents use Groq's `openai/gpt-oss-120b` by default.
+The Streamlit app adds a visual interface and an inspectable 5-stage LangGraph workflow: route across syllabus documents → retrieve balanced evidence using metadata filters → assess relevance → write answer → review citations → revise once if needed. All reasoning agents use Groq's `openai/gpt-oss-120b` by default.
 
 Start it after installing dependencies and adding API keys:
 

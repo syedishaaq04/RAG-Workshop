@@ -37,8 +37,24 @@ class CitationReview(BaseModel):
         return data
 
 
+class RoutingDecision(BaseModel):
+    target_sources: list[str] = Field(default_factory=list, description="Target PDF filenames relevant to the question.")
+    reason: str = Field(default="Searching all available sources.", description="Reason for routing decision.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "target_sources" not in data:
+                data["target_sources"] = data.get("sources") or data.get("files") or data.get("targets") or []
+            if "reason" not in data:
+                data["reason"] = data.get("explanation") or data.get("justification") or "Routed query."
+        return data
+
+
 class AgentState(TypedDict, total=False):
     question: str
+    target_sources: list[str]
     hits: list[dict]
     assessment: dict
     draft: str
@@ -71,7 +87,7 @@ def _parse_json_result(text: str, model_cls: type[BaseModel]) -> BaseModel:
 
 
 class SyllabusRAGAgent:
-    """Orchestrates retrieval, assessment, answer writing, and citation review."""
+    """Orchestrates routing, retrieval, assessment, answer writing, and citation review."""
 
     def __init__(self, knowledge_base: SyllabusKnowledgeBase, settings: Settings) -> None:
         self.knowledge_base = knowledge_base
@@ -90,9 +106,49 @@ class SyllabusRAGAgent:
             f"SOURCE {hit['citation']}\n{hit['text']}" for hit in hits
         )
 
+    def _route(self, state: AgentState) -> dict:
+        available_pdfs = self.knowledge_base.pdf_names()
+        if not available_pdfs or len(available_pdfs) <= 1:
+            return {
+                "target_sources": available_pdfs,
+                "trace": self._trace(state, f"Router: Searching knowledge base ({len(available_pdfs)} source available)."),
+            }
+
+        pdf_list_formatted = "\n".join(f"- {name}" for name in available_pdfs)
+        response = self.evaluator.invoke([
+            HumanMessage(content=(
+                "You are a Syllabus Router Agent. Your task is to analyze the student's question and select "
+                "which syllabus PDF document(s) must be searched.\n\n"
+                f"Available syllabus documents in database:\n{pdf_list_formatted}\n\n"
+                "Routing rules:\n"
+                "1. If the question asks about a specific program (e.g. CSE or AIDS/AI), select only the matching PDF(s).\n"
+                "2. If the question asks about both/multiple programs, compares them, or asks a general question, select all relevant PDFs.\n"
+                "3. If unsure, select all available documents.\n\n"
+                "You must respond with valid JSON with keys:\n"
+                "- 'target_sources': list of exact matching filenames from the available list\n"
+                "- 'reason': brief explanation of why these sources were selected\n\n"
+                f"Question: {state['question']}"
+            ))
+        ])
+        decision = _parse_json_result(str(response.content), RoutingDecision)
+        valid_targets = [f for f in decision.target_sources if f in available_pdfs]
+        if not valid_targets:
+            valid_targets = available_pdfs
+
+        target_names = ", ".join(valid_targets)
+        return {
+            "target_sources": valid_targets,
+            "trace": self._trace(state, f"Router agent: Targeted {len(valid_targets)} source(s) [{target_names}]: {decision.reason}"),
+        }
+
     def _retrieve(self, state: AgentState) -> dict:
-        hits = [chunk.to_dict() for chunk in self.knowledge_base.retrieve(state["question"])]
-        return {"hits": hits, "trace": self._trace(state, f"Retrieved {len(hits)} syllabus excerpts.")}
+        targets = state.get("target_sources")
+        hits = [chunk.to_dict() for chunk in self.knowledge_base.retrieve(state["question"], source_files=targets)]
+        sources_found = set(h["source_file"] for h in hits)
+        return {
+            "hits": hits,
+            "trace": self._trace(state, f"Retriever: Retrieved {len(hits)} syllabus excerpts across {len(sources_found)} document source(s)."),
+        }
 
     def _assess(self, state: AgentState) -> dict:
         response = self.evaluator.invoke([
@@ -171,6 +227,7 @@ class SyllabusRAGAgent:
 
     def _build_graph(self):
         builder = StateGraph(AgentState)
+        builder.add_node("route", self._route)
         builder.add_node("retrieve", self._retrieve)
         builder.add_node("assess", self._assess)
         builder.add_node("write", self._write)
@@ -178,7 +235,8 @@ class SyllabusRAGAgent:
         builder.add_node("revise", self._revise)
         builder.add_node("decline", self._decline)
         builder.add_node("finalize", self._finalize)
-        builder.add_edge(START, "retrieve")
+        builder.add_edge(START, "route")
+        builder.add_edge("route", "retrieve")
         builder.add_edge("retrieve", "assess")
         builder.add_conditional_edges("assess", self._after_assessment)
         builder.add_edge("write", "review")

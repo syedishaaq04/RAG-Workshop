@@ -109,14 +109,55 @@ class SyllabusKnowledgeBase:
             )
         return len(chunks)
 
-    def retrieve(self, query: str, k: int = 4) -> list[RetrievedChunk]:
+    def retrieve(
+        self,
+        query: str,
+        k: int = 4,
+        source_files: list[str] | None = None,
+    ) -> list[RetrievedChunk]:
         if not query.strip():
             raise ValueError("Ask a non-empty question.")
         if self.collection.count() == 0:
             raise RuntimeError("The knowledge base is empty. Build the index first.")
 
+        query_emb = self.query_embeddings([query])
+
+        if source_files:
+            available_sources = set(self.pdf_names())
+            valid_targets = [s for s in source_files if s in available_sources]
+            if valid_targets:
+                chunks: list[RetrievedChunk] = []
+                per_source_k = max(2, min(k, 4))
+                for target_file in valid_targets:
+                    try:
+                        res = self.collection.query(
+                            query_embeddings=query_emb,
+                            n_results=per_source_k,
+                            where={"source_file": target_file},
+                            include=["documents", "metadatas", "distances"],
+                        )
+                        if res["documents"] and res["documents"][0]:
+                            for doc, meta, dist in zip(
+                                res["documents"][0],
+                                res["metadatas"][0],
+                                res["distances"][0],
+                            ):
+                                chunks.append(
+                                    RetrievedChunk(
+                                        text=doc,
+                                        citation=meta["citation"],
+                                        source_file=meta["source_file"],
+                                        page_number=int(meta["page_number"]),
+                                        distance=float(dist),
+                                    )
+                                )
+                    except Exception:
+                        pass
+                if chunks:
+                    return chunks
+
         result = self.collection.query(
-            query_embeddings=self.query_embeddings([query]),
+            query_embeddings=query_emb,
             n_results=min(k, self.collection.count()),
             include=["documents", "metadatas", "distances"],
         )
