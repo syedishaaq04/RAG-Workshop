@@ -95,7 +95,10 @@ def main() -> None:
         settings, knowledge_base, agent = get_services()
     except Exception as error:
         st.error(str(error))
-        st.info("Add `GOOGLE_API_KEY` and `GROQ_API_KEY` to `.env`, then reload the app.")
+        st.info("Add valid `GOOGLE_API_KEY` and `GROQ_API_KEY` to `.env`, then click Retry below.")
+        if st.button("🔄 Retry / Reload Keys", use_container_width=True):
+            st.cache_resource.clear()
+            st.rerun()
         st.stop()
 
     with st.sidebar:

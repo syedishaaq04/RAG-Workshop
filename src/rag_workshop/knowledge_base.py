@@ -64,7 +64,9 @@ class SyllabusKnowledgeBase:
             raise FileNotFoundError(f"No PDFs found in {self.settings.data_dir}.")
 
         if rebuild and self.collection.count() > 0:
-            self.collection.delete(ids=self.collection.get()["ids"])
+            all_ids = self.collection.get(limit=self.collection.count())["ids"]
+            if all_ids:
+                self.collection.delete(ids=all_ids)
 
         if self.collection.count() > 0:
             return 0
