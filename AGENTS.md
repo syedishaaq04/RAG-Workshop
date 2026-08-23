@@ -42,9 +42,12 @@ Build a student-friendly, live workshop demonstration of Retrieval-Augmented Gen
 
 Do not implement these items until the user explicitly asks:
 
-- Streamlit or Reflex web application
-- LangChain/LangGraph RAG agents
 - Deployment
+
+## Verification
+
+- Do not use the browser sub-agent to verify the Streamlit web app or any other UI. The user will test manually.
+- Verify code correctness through import checks, syntax parsing, and unit-level validation instead.
 
 ## Git and GitHub workflow
 

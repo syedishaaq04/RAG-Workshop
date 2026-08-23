@@ -59,6 +59,8 @@ def render_message(message: dict) -> None:
             render_sources(message.get("citations", []))
             if message.get("trace"):
                 with st.expander("Agent workflow trace"):
+                    if message.get("assessment"):
+                        st.caption(message["assessment"])
                     for step in message["trace"]:
                         st.write(f"• {step}")
 
@@ -68,8 +70,13 @@ def answer_question(agent: SyllabusRAGAgent, question: str) -> None:
     with st.chat_message("user", avatar="🎓"):
         st.markdown(question)
     with st.chat_message("assistant", avatar="✦"):
-        with st.spinner("Retrieving evidence, reasoning, and checking citations..."):
-            result = agent.ask(question)
+        try:
+            with st.spinner("Retrieving evidence, reasoning, and checking citations..."):
+                result = agent.ask(question)
+        except Exception as error:
+            st.error(f"Agent error: {error}")
+            st.session_state.messages.pop()  # remove orphaned user message
+            return
         st.markdown(result["answer"])
         render_sources(result["citations"])
         with st.expander("Agent workflow trace"):
@@ -106,7 +113,7 @@ def main() -> None:
             try:
                 with st.spinner("Embedding syllabus pages with Gemini..."):
                     added = knowledge_base.index_pdfs(rebuild=rebuild)
-                st.success(f"Ready. Added {added} chunks." if added else "Existing index is ready.")
+                st.toast(f"Ready — added {added} chunks." if added else "Existing index is ready.", icon="✅")
                 st.rerun()
             except Exception as error:
                 st.error(str(error))

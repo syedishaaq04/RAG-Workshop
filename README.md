@@ -4,11 +4,15 @@ This project contains a student-friendly Jupyter notebook that builds a Retrieva
 
 ## Quick start
 
-1. Create and activate a virtual environment.
-2. Install the workshop packages: `pip install -r requirements.txt`.
-3. Put one or more syllabus PDFs in `data/`.
-4. Add `GOOGLE_API_KEY` and `GROQ_API_KEY` to `.env` (use `.env.example` as the template).
-5. Start Jupyter with `jupyter lab` and run `rag_workshop.ipynb` from top to bottom.
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+1. Put one or more syllabus PDFs in `data/`.
+2. Copy `.env.example` to `.env` and fill in `GOOGLE_API_KEY` and `GROQ_API_KEY`.
+3. Start Jupyter with `jupyter lab` and run `rag_workshop.ipynb` from top to bottom.
 
 The generated Chroma database lives under `vector_store/chroma/`. It is intentionally ignored by Git because it can be rebuilt from the PDFs. The notebook uses the current Google GenAI Python SDK (`google-genai`) through a small Chroma-compatible Gemini embedding adapter.
 
