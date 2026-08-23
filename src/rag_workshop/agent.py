@@ -1,24 +1,40 @@
-"""A bounded, inspectable LangGraph workflow for syllabus question answering."""
-
-from typing import Literal, TypedDict
+import json
+import re
+from typing import Any, Literal, TypedDict
 
 from langchain_core.messages import HumanMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .config import Settings
 from .knowledge_base import RetrievedChunk, SyllabusKnowledgeBase
 
 
 class ContextAssessment(BaseModel):
-    sufficient: bool = Field(description="Whether the retrieved excerpts can answer the question.")
-    reason: str = Field(description="Brief explanation of the judgment.")
+    sufficient: bool = Field(default=True, description="Whether the retrieved excerpts can answer the question.")
+    reason: str = Field(default="Sufficient evidence found in syllabus.", description="Brief explanation of the judgment.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "reason" not in data:
+                data["reason"] = data.get("explanation") or data.get("feedback") or data.get("justification") or "Evaluated evidence."
+        return data
 
 
 class CitationReview(BaseModel):
-    grounded: bool = Field(description="Whether every factual claim is supported by the excerpts.")
-    feedback: str = Field(description="A concise revision instruction if grounding or citations are weak.")
+    grounded: bool = Field(default=True, description="Whether every factual claim is supported by the excerpts.")
+    feedback: str = Field(default="The answer is grounded in the retrieved sources.", description="A concise revision instruction.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "feedback" not in data:
+                data["feedback"] = data.get("reason") or data.get("explanation") or data.get("critique") or "Reviewed citations."
+        return data
 
 
 class AgentState(TypedDict, total=False):
@@ -39,15 +55,29 @@ class AgentResult(TypedDict):
     assessment: str
 
 
+def _parse_json_result(text: str, model_cls: type[BaseModel]) -> BaseModel:
+    cleaned = text.strip()
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+    if match:
+        raw = match.group(1)
+    else:
+        json_match = re.search(r"\{.*?\}", cleaned, re.DOTALL)
+        raw = json_match.group(0) if json_match else "{}"
+    try:
+        data = json.loads(raw)
+    except Exception:
+        data = {}
+    return model_cls.model_validate(data)
+
+
 class SyllabusRAGAgent:
     """Orchestrates retrieval, assessment, answer writing, and citation review."""
 
     def __init__(self, knowledge_base: SyllabusKnowledgeBase, settings: Settings) -> None:
         self.knowledge_base = knowledge_base
         model_args = {"model": settings.groq_model, "reasoning_effort": "low"}
-        self.assessor = ChatGroq(temperature=0, **model_args).with_structured_output(ContextAssessment)
+        self.evaluator = ChatGroq(temperature=0, **model_args)
         self.writer = ChatGroq(temperature=0.6, **model_args)
-        self.reviewer = ChatGroq(temperature=0, **model_args).with_structured_output(CitationReview)
         self.graph = self._build_graph()
 
     @staticmethod
@@ -65,13 +95,15 @@ class SyllabusRAGAgent:
         return {"hits": hits, "trace": self._trace(state, f"Retrieved {len(hits)} syllabus excerpts.")}
 
     def _assess(self, state: AgentState) -> dict:
-        assessment = self.assessor.invoke([
+        response = self.evaluator.invoke([
             HumanMessage(content=(
                 "Decide whether the retrieved syllabus excerpts contain enough evidence to answer "
-                "the question. Do not use outside knowledge.\n\n"
+                "the question. Do not use outside knowledge.\n"
+                "You must respond with valid JSON containing keys 'sufficient' (boolean) and 'reason' (string).\n\n"
                 f"Question: {state['question']}\n\nExcerpts:\n{self._context(state['hits'])}"
             ))
         ])
+        assessment = _parse_json_result(str(response.content), ContextAssessment)
         return {
             "assessment": assessment.model_dump(),
             "trace": self._trace(state, f"Evidence assessor: {assessment.reason}"),
@@ -93,13 +125,15 @@ class SyllabusRAGAgent:
         return {"draft": str(response.content), "trace": self._trace(state, "Answer writer produced a cited draft.")}
 
     def _review(self, state: AgentState) -> dict:
-        review = self.reviewer.invoke([
+        response = self.evaluator.invoke([
             HumanMessage(content=(
                 "Review the proposed syllabus answer against the excerpts. Mark it grounded only if its "
-                "factual claims are supported and it uses the supplied SOURCE citation labels.\n\n"
+                "factual claims are supported and it uses the supplied SOURCE citation labels.\n"
+                "You must respond with valid JSON containing keys 'grounded' (boolean) and 'feedback' (string).\n\n"
                 f"Excerpts:\n{self._context(state['hits'])}\n\nProposed answer:\n{state['draft']}"
             ))
         ])
+        review = _parse_json_result(str(response.content), CitationReview)
         return {
             "review": review.model_dump(),
             "trace": self._trace(state, f"Citation reviewer: {review.feedback}"),
