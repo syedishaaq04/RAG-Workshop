@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Python and Jupyter
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Local, regenerable RAG data
+vector_store/
+
+# Source documents may be licensed or large; keep them local.
+data/*.pdf
+!data/.gitkeep
