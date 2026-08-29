@@ -97,26 +97,25 @@ class MongoDBVectorStore:
 
     async def retrieve(self, query: str, k: int = 8, source_files: list[str] = None):
         query_emb = await self.get_query_embedding(query)
-        
-        # Build Vector Search Pipeline
+
+        # --- Stage 1: Atlas Vector Search ---
         pipeline = [
             {
                 "$vectorSearch": {
                     "index": "vector_index",
                     "path": "embedding",
                     "queryVector": query_emb,
-                    "numCandidates": k * 5,
+                    "numCandidates": max(k * 10, 150),
                     "limit": k
                 }
             }
         ]
-
         if source_files:
             pipeline[0]["$vectorSearch"]["filter"] = {"source_file": {"$in": source_files}}
-            
+
         pipeline.append({
             "$project": {
-                "_id": 0,
+                "_id": 1,
                 "text": 1,
                 "citation": 1,
                 "source_file": 1,
@@ -124,11 +123,40 @@ class MongoDBVectorStore:
                 "score": {"$meta": "vectorSearchScore"}
             }
         })
-
         cursor = self.collection.aggregate(pipeline)
-        results = await cursor.to_list(length=k)
-        
-        # Translate to objects expected by agent
+        vector_results = await cursor.to_list(length=k)
+
+        # --- Stage 2: Keyword fallback search using noun phrase bigrams ---
+        stopwords = {"the", "are", "for", "what", "list", "of", "in", "a", "an", "and",
+                     "is", "to", "all", "any", "this", "that", "with", "from", "about"}
+        words = [w.strip("?.,!") for w in query.lower().split() if len(w) > 2 and w.strip("?.,!") not in stopwords]
+        seen_ids = {str(r["_id"]) for r in vector_results}
+        extra_results = []
+        if words:
+            # Build bigrams (phrase pairs) for more precise matching
+            bigrams = [f"{words[i]} {words[i+1]}" for i in range(len(words) - 1)]
+            search_terms = bigrams if bigrams else words[:3]
+            # Escape special regex chars
+            import re as _re
+            escaped = [_re.escape(t) for t in search_terms[:4]]
+            keyword_filter: dict = {"text": {"$regex": "|".join(escaped), "$options": "i"}}
+            if source_files:
+                keyword_filter["source_file"] = {"$in": source_files}
+            kw_cursor = self.collection.find(
+                keyword_filter,
+                {"_id": 1, "text": 1, "citation": 1, "source_file": 1, "page_number": 1}
+            ).limit(k)
+            kw_docs = await kw_cursor.to_list(length=k)
+            for doc in kw_docs:
+                doc_id = str(doc["_id"])
+                if doc_id not in seen_ids:
+                    doc["score"] = 0.75  # baseline score for keyword hits
+                    extra_results.append(doc)
+                    seen_ids.add(doc_id)
+
+        all_results = vector_results + extra_results
+
+        # --- Build result objects ---
         class RetrievedChunk:
             def __init__(self, text, citation, source_file, page_number, distance):
                 self.text = text
@@ -136,18 +164,18 @@ class MongoDBVectorStore:
                 self.source_file = source_file
                 self.page_number = page_number
                 self.distance = distance
-                
+
             def to_dict(self):
                 return self.__dict__
-                
+
         chunks = []
-        for r in results:
-            # vectorSearchScore is similarity, we might map to distance: 1 - score
-            distance = 1.0 - r.get("score", 1.0)
-            chunks.append(RetrievedChunk(r["text"], r["citation"], r["source_file"], r["page_number"], distance))
-            
+        for r in all_results:
+            distance = 1.0 - r.get("score", 0.75)
+            chunks.append(RetrievedChunk(
+                r["text"], r["citation"], r["source_file"], r["page_number"], distance
+            ))
         return chunks
-        
+
     async def get_available_sources(self) -> list[str]:
         sources = await self.collection.distinct("source_file")
         return sources
