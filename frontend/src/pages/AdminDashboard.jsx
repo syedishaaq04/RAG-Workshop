@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -7,8 +7,6 @@ import {
   ArrowLeft, Upload, Trash2, BookOpen, CheckCircle2,
   Clock, AlertCircle, Loader2, FileText, RefreshCw, Settings, UserPlus
 } from 'lucide-react';
-
-const API = 'http://localhost:8000';
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -50,7 +48,7 @@ export default function AdminDashboard() {
   const fetchDocuments = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const { data } = await axios.get(`${API}/api/admin/documents`);
+      const { data } = await api.get('/api/admin/documents');
       setDocuments(data);
       // Stop polling once all docs reach a final state
       const allDone = data.every(d => d.status === 'indexed' || d.status === 'error');
@@ -86,7 +84,7 @@ export default function AdminDashboard() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      await axios.post(`${API}/api/admin/documents/upload`, formData, {
+      await api.post('/api/admin/documents/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setSuccess(`"${file.name}" uploaded — indexing in progress…`);
@@ -122,10 +120,7 @@ export default function AdminDashboard() {
 
     setCreatingUsers(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('/api/auth/admin/users', validUsers, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.post('/api/auth/admin/users', validUsers);
       
       let msg = res.data.message;
       if (res.data.errors && res.data.errors.length > 0) {
@@ -144,7 +139,7 @@ export default function AdminDashboard() {
   const handleDelete = async (docId, filename) => {
     if (!window.confirm(`Delete "${filename}" and all its indexed vectors?`)) return;
     try {
-      await axios.delete(`${API}/api/admin/documents/${docId}`);
+      await api.delete(`/api/admin/documents/${docId}`);
       setDocuments((prev) => prev.filter((d) => d.id !== docId));
       setSuccess(`"${filename}" deleted successfully.`);
     } catch (err) {

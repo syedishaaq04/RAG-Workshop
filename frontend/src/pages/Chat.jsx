@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -9,8 +9,6 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ChangePasswordModal from '../components/ChangePasswordModal';
-
-const API = 'http://localhost:8000';
 
 export default function Chat() {
   const { user, logout } = useAuth();
@@ -34,7 +32,7 @@ export default function Chat() {
 
   const fetchHistory = async (preserveActive = false) => {
     try {
-      const { data } = await axios.get(`${API}/api/chat/history`);
+      const { data } = await api.get('/api/chat/history');
       setConversations(data);
       if (data.length > 0 && !preserveActive && !activeChatId) {
         setActiveChatId(data[0].id);
@@ -55,7 +53,7 @@ export default function Chat() {
   const deleteChat = async (e, chatId) => {
     e.stopPropagation();
     try {
-      await axios.delete(`${API}/api/chat/${chatId}`);
+      await api.delete(`/api/chat/${chatId}`);
       if (activeChatId === chatId) {
         startNewChat();
       }
@@ -81,7 +79,7 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const { data } = await axios.post(`${API}/api/chat/message`, {
+      const { data } = await api.post('/api/chat/message', {
         chat_id: activeChatId,
         question,
       });

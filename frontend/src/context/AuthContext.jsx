@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchUser();
     } else {
       setLoading(false);
@@ -19,12 +18,11 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const { data } = await axios.get('http://localhost:8000/api/auth/me');
+      const { data } = await api.get('/api/auth/me');
       setUser(data);
     } catch (error) {
       console.error('Failed to fetch user', error);
       localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
     }
@@ -35,15 +33,13 @@ export const AuthProvider = ({ children }) => {
     formData.append('username', email);
     formData.append('password', password);
     
-    const { data } = await axios.post('http://localhost:8000/api/auth/login', formData);
+    const { data } = await api.post('/api/auth/login', formData);
     localStorage.setItem('token', data.access_token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
     setUser({ email: data.email, role: data.role });
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
