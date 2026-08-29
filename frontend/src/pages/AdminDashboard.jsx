@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -33,21 +33,35 @@ export default function AdminDashboard() {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const pollRef = useRef(null);
 
   useEffect(() => {
     fetchDocuments();
+    return () => clearInterval(pollRef.current);
   }, []);
 
-  const fetchDocuments = async () => {
-    setLoading(true);
+  const fetchDocuments = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data } = await axios.get(`${API}/api/admin/documents`);
       setDocuments(data);
+      // Stop polling once all docs reach a final state
+      const allDone = data.every(d => d.status === 'indexed' || d.status === 'error');
+      if (allDone && pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return data;
     } catch (err) {
       setError('Failed to load documents.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
+  };
+
+  const startPolling = () => {
+    if (pollRef.current) return; // already polling
+    pollRef.current = setInterval(() => fetchDocuments(true), 3000);
   };
 
   const handleUpload = async (file) => {
@@ -64,8 +78,9 @@ export default function AdminDashboard() {
       await axios.post(`${API}/api/admin/documents/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setSuccess(`"${file.name}" is being processed and will be indexed shortly.`);
-      fetchDocuments();
+      setSuccess(`"${file.name}" uploaded — indexing in progress…`);
+      await fetchDocuments();
+      startPolling(); // auto-refresh every 3s until indexing completes
     } catch (err) {
       setError(err.response?.data?.detail || 'Upload failed.');
     } finally {
