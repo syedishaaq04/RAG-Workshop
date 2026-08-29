@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, Send, LogOut, LayoutDashboard, ChevronDown,
-  Loader2, Bot, User, BookMarked, Sparkles, Plus
+  Loader2, Bot, User, BookMarked, Sparkles, Plus, Trash2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
