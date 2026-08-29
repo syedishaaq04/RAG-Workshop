@@ -7,6 +7,7 @@ import {
   Loader2, Bot, User, BookMarked, Sparkles, Plus
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const API = 'http://localhost:8000';
 
@@ -47,6 +48,19 @@ export default function Chat() {
   const startNewChat = () => {
     setActiveChatId(null);
     setMessages([]);
+  };
+
+  const deleteChat = async (e, chatId) => {
+    e.stopPropagation();
+    try {
+      await axios.delete(`${API}/api/chat/${chatId}`);
+      if (activeChatId === chatId) {
+        startNewChat();
+      }
+      fetchHistory(true);
+    } catch (err) {
+      console.error('Failed to delete chat', err);
+    }
   };
 
   const selectConversation = (conv) => {
@@ -124,17 +138,27 @@ export default function Chat() {
             <p className="text-xs text-slate-600 text-center py-6">No conversations yet</p>
           ) : (
             conversations.map((conv) => (
-              <button
+              <div
                 key={conv.id}
-                onClick={() => selectConversation(conv)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-sm truncate transition-all ${
+                className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
                   activeChatId === conv.id
-                    ? 'bg-blue-600/15 text-blue-300 border border-blue-500/20'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    ? 'bg-blue-600/15 border border-blue-500/20'
+                    : 'hover:bg-white/5 border border-transparent'
                 }`}
+                onClick={() => selectConversation(conv)}
               >
-                {conv.title || 'Untitled Chat'}
-              </button>
+                <span className={`text-sm truncate pr-2 ${
+                  activeChatId === conv.id ? 'text-blue-300' : 'text-slate-400 group-hover:text-slate-200'
+                }`}>
+                  {conv.title || 'Untitled Chat'}
+                </span>
+                <button
+                  onClick={(e) => deleteChat(e, conv.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 hover:bg-white/10 rounded-md transition-all shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))
           )}
         </div>
@@ -216,8 +240,8 @@ export default function Chat() {
                     ? 'bg-blue-600/20 border border-blue-500/20 text-slate-200 rounded-tr-sm'
                     : 'bg-white/5 border border-white/8 text-slate-300 rounded-tl-sm'
                 }`}>
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <div className="prose prose-invert prose-sm max-w-none prose-td:border prose-td:border-white/10 prose-th:border prose-th:border-white/10 prose-th:bg-white/5">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
 
