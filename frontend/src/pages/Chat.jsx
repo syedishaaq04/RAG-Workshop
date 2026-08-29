@@ -29,11 +29,11 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (preserveActive = false) => {
     try {
       const { data } = await axios.get(`${API}/api/chat/history`);
       setConversations(data);
-      if (data.length > 0) {
+      if (data.length > 0 && !preserveActive && !activeChatId) {
         setActiveChatId(data[0].id);
         setMessages(data[0].messages);
       }
@@ -71,8 +71,8 @@ export default function Chat() {
       });
       setActiveChatId(data.chat_id);
       setMessages((prev) => [...prev, data.message]);
-      // Refresh history sidebar
-      fetchHistory();
+      // Refresh history sidebar without resetting active chat
+      fetchHistory(true);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
