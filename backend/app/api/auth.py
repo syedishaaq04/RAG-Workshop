@@ -15,6 +15,10 @@ class UserCreate(BaseModel):
     password: str
     role: str = "student"
 
+class UserPasswordUpdate(BaseModel):
+    old_password: str
+    new_password: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -60,8 +64,31 @@ async def register(user_in: UserCreate):
     await new_user.insert()
     return {"message": "User created successfully"}
 
+@router.post("/admin/users", response_model=dict)
+async def create_users_bulk(users_in: list[UserCreate], admin=Depends(get_current_admin)):
+    created = 0
+    errors = []
+    for u in users_in:
+        existing = await User.find_one(User.email == u.email)
+        if existing:
+            errors.append(f"{u.email} already exists")
+            continue
+        hashed_password = get_password_hash(u.password)
+        new_user = User(email=u.email, password_hash=hashed_password, role="student")
+        await new_user.insert()
+        created += 1
+    
+    return {"message": f"Created {created} users", "errors": errors}
+
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    if form_data.username == "guest@uni.edu":
+        guest = await User.find_one(User.email == "guest@uni.edu")
+        if not guest:
+            guest_hash = get_password_hash("guestpassword")
+            new_guest = User(email="guest@uni.edu", password_hash=guest_hash, role="student")
+            await new_guest.insert()
+
     user = await User.find_one(User.email == form_data.username)
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
@@ -80,3 +107,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @router.get("/me", response_model=dict)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return {"email": current_user.email, "role": current_user.role}
+
+@router.put("/password", response_model=dict)
+async def change_password(passwords: UserPasswordUpdate, current_user: User = Depends(get_current_user)):
+    if current_user.email == "guest@uni.edu":
+        raise HTTPException(status_code=400, detail="Cannot change guest account password")
+        
+    if not verify_password(passwords.old_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+        
+    new_hash = get_password_hash(passwords.new_password)
+    current_user.password_hash = new_hash
+    await current_user.save()
+    return {"message": "Password updated successfully"}

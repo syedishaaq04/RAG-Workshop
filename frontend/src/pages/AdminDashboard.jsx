@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import {
   ArrowLeft, Upload, Trash2, BookOpen, CheckCircle2,
-  Clock, AlertCircle, Loader2, FileText, RefreshCw
+  Clock, AlertCircle, Loader2, FileText, RefreshCw, Settings, UserPlus
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
@@ -30,6 +31,12 @@ export default function AdminDashboard() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  // User management state
+  const [usersForm, setUsersForm] = useState([{ email: '', password: '' }]);
+  const [userMsg, setUserMsg] = useState({ type: '', text: '' });
+  const [creatingUsers, setCreatingUsers] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -86,9 +93,51 @@ export default function AdminDashboard() {
       await fetchDocuments();
       startPolling(); // auto-refresh every 3s until indexing completes
     } catch (err) {
-      setError(err.response?.data?.detail || 'Upload failed.');
+      setError(err.response?.data?.detail || 'Failed to process document');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleAddUserRow = () => {
+    setUsersForm([...usersForm, { email: '', password: '' }]);
+  };
+
+  const handleUserChange = (index, field, value) => {
+    const newForm = [...usersForm];
+    newForm[index][field] = value;
+    setUsersForm(newForm);
+  };
+
+  const handleCreateUsers = async (e) => {
+    e.preventDefault();
+    setUserMsg({ type: '', text: '' });
+    
+    // Filter out empty rows
+    const validUsers = usersForm.filter(u => u.email.trim() !== '' && u.password.trim() !== '');
+    if (validUsers.length === 0) {
+      setUserMsg({ type: 'error', text: 'Please fill in at least one user.' });
+      return;
+    }
+
+    setCreatingUsers(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('/api/auth/admin/users', validUsers, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      let msg = res.data.message;
+      if (res.data.errors && res.data.errors.length > 0) {
+        msg += `. Errors: ${res.data.errors.join(', ')}`;
+      }
+      
+      setUserMsg({ type: 'success', text: msg });
+      setUsersForm([{ email: '', password: '' }]); // Reset form
+    } catch (err) {
+      setUserMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to create users.' });
+    } finally {
+      setCreatingUsers(false);
     }
   };
 
@@ -192,13 +241,28 @@ export default function AdminDashboard() {
         </div>
 
         {/* Documents Table */}
-        <div className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden">
+        <div className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between">
             <h2 className="font-semibold text-slate-200 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-blue-400" />
               Indexed Documents
               <span className="text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded-full ml-1">{documents.length}</span>
             </h2>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 transition-all"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="text-sm font-medium">Settings</span>
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all shadow-lg shadow-blue-500/20"
+              >
+                Back to Chat
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -238,7 +302,74 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+
+        {/* User Management Section */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">User Management</h2>
+              <p className="text-sm text-slate-400">Create new student accounts.</p>
+            </div>
+          </div>
+
+          {userMsg.text && (
+            <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 ${
+              userMsg.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            }`}>
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span className="text-sm">{userMsg.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateUsers}>
+            <div className="space-y-3 mb-6">
+              {usersForm.map((user, index) => (
+                <div key={index} className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="email"
+                    placeholder="student@uni.edu"
+                    value={user.email}
+                    onChange={(e) => handleUserChange(index, 'email', e.target.value)}
+                    className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/60 transition-all text-sm"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={user.password}
+                    onChange={(e) => handleUserChange(index, 'password', e.target.value)}
+                    className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/60 transition-all text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleAddUserRow}
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium transition-all"
+              >
+                + Add Row
+              </button>
+              <button
+                type="submit"
+                disabled={creatingUsers}
+                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all shadow-lg shadow-blue-500/20 disabled:opacity-60 flex items-center justify-center min-w-[120px]"
+              >
+                {creatingUsers ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Users'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
+
+      <ChangePasswordModal 
+        isOpen={showPasswordModal} 
+        onClose={() => setShowPasswordModal(false)} 
+      />
     </div>
   );
 }

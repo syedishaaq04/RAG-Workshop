@@ -26,6 +26,19 @@ export default function Login() {
     }
   };
 
+  const handleGuestLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await login('guest@uni.edu', 'guestpassword');
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Guest login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#0B0F19] px-4"
       style={{ background: 'radial-gradient(ellipse at 60% 20%, #1e3a5f 0%, #0B0F19 60%)' }}>
@@ -90,6 +103,20 @@ export default function Login() {
               className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
             >
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</> : 'Sign in'}
+            </button>
+            <div className="relative flex items-center py-4">
+              <div className="flex-grow border-t border-white/10"></div>
+              <span className="shrink-0 px-4 text-xs text-slate-500 uppercase tracking-widest">or</span>
+              <div className="flex-grow border-t border-white/10"></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGuestLogin}
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-all duration-150 disabled:opacity-60"
+            >
+              Try as Guest
             </button>
           </form>
         </div>

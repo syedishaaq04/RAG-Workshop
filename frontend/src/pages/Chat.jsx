@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, Send, LogOut, LayoutDashboard, ChevronDown,
-  Loader2, Bot, User, BookMarked, Sparkles, Plus, Trash2
+  Loader2, Bot, User, BookMarked, Sparkles, Plus, Trash2, Settings
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const API = 'http://localhost:8000';
 
@@ -19,6 +20,7 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const messagesEndRef = useRef(null);
 
@@ -97,11 +99,6 @@ export default function Chat() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
     <div className="h-screen w-full flex bg-[#0B0F19] text-slate-200 overflow-hidden">
       
@@ -174,12 +171,21 @@ export default function Chat() {
               <LayoutDashboard className="w-4 h-4" /> Admin Dashboard
             </button>
           )}
-          <button
-            id="logout-btn"
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all"
+        </div>
+        <div className="p-4 border-t border-white/5 flex gap-2">
+          <button 
+            onClick={() => setShowPasswordModal(true)}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
           >
-            <LogOut className="w-4 h-4" /> Sign out
+            <Settings className="w-4 h-4" />
+            <span className="text-sm font-medium">Settings</span>
+          </button>
+          <button 
+            onClick={logout}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="text-sm font-medium">Log out</span>
           </button>
         </div>
       </aside>
@@ -299,6 +305,11 @@ export default function Chat() {
           </p>
         </div>
       </main>
+
+      <ChangePasswordModal 
+        isOpen={showPasswordModal} 
+        onClose={() => setShowPasswordModal(false)} 
+      />
     </div>
   );
 }

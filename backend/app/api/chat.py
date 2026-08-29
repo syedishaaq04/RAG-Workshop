@@ -42,7 +42,10 @@ async def send_message(request: ChatRequest, user=Depends(get_current_user)):
         "citations": result.get("citations", []),
     }
     chat.messages.append(assistant_msg)
-    await chat.save()
+    
+    # Don't save history for the guest user
+    if user.email != "guest@uni.edu":
+        await chat.save()
 
     return {
         "chat_id": str(chat.id),
@@ -52,6 +55,9 @@ async def send_message(request: ChatRequest, user=Depends(get_current_user)):
 
 @router.get("/history", response_model=List[dict])
 async def get_history(user=Depends(get_current_user)):
+    if user.email == "guest@uni.edu":
+        return []
+        
     chats = await ChatHistory.find(ChatHistory.user_id == str(user.id)).to_list()
     # Sort by creation time if we had a timestamp, or just return as is
     return [{"id": str(c.id), "title": c.title, "messages": c.messages} for c in chats]
