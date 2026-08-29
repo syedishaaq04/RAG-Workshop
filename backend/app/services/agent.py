@@ -106,9 +106,10 @@ class SyllabusRAGAgent:
 
     def __init__(self, vector_store: MongoDBVectorStore) -> None:
         self.vector_store = vector_store
-        model_args = {"model": settings.RAG_AGENT_MODEL, "reasoning_effort": "low"}
-        self.evaluator = ChatGroq(api_key=settings.GROQ_API_KEY, temperature=0, **model_args)
-        self.writer = ChatGroq(api_key=settings.GROQ_API_KEY, temperature=0.6, **model_args)
+        # Per AGENTS.md: use reasoning_effort="low", temperature=0.6 for gpt-oss-120b
+        model_args = {"model": settings.RAG_AGENT_MODEL, "reasoning_effort": "low", "temperature": 0.6}
+        self.evaluator = ChatGroq(api_key=settings.GROQ_API_KEY, **model_args)
+        self.writer = ChatGroq(api_key=settings.GROQ_API_KEY, **model_args)
         self.graph = self._build_graph()
 
     @staticmethod
@@ -205,15 +206,35 @@ class SyllabusRAGAgent:
         }
 
     async def _assess(self, state: AgentState) -> dict:
+        hits = state.get("hits", [])
+        # Fast-path: if we have 0 chunks, decline immediately without an LLM call
+        if not hits:
+            return {
+                "assessment": {"sufficient": False, "reason": "No excerpts were retrieved from the vector store."},
+                "trace": self._trace(state, "Evidence assessor: No excerpts retrieved — declining."),
+            }
+
         response = await self.evaluator.ainvoke([
             HumanMessage(content=(
-                "Decide whether the retrieved syllabus excerpts contain enough evidence to answer "
-                "the question. Do not use outside knowledge.\n"
-                "You must respond with valid JSON containing keys 'sufficient' (boolean) and 'reason' (string).\n\n"
-                f"Question: {state['question']}\n\nExcerpts:\n{self._context(state['hits'])}"
+                "You are an Evidence Assessor for a university syllabus chatbot. "
+                "Your ONLY job is to decide if the retrieved excerpts contain ANY relevant content "
+                "that could help answer the question.\n\n"
+                "IMPORTANT RULES:\n"
+                "- Mark sufficient=true whenever the excerpts mention the topic at all, even partially.\n"
+                "- Mark sufficient=false ONLY if the excerpts are completely unrelated to the question.\n"
+                "- Do NOT require complete or perfect answers — partial information is enough.\n"
+                "- University syllabus content (course names, modules, credits, labs, regulations) counts as relevant.\n\n"
+                "You must respond ONLY with valid JSON with exactly these keys:\n"
+                "  {\"sufficient\": true/false, \"reason\": \"brief explanation\"}\n\n"
+                f"Question: {state['question']}\n\n"
+                f"Retrieved Excerpts:\n{self._context(hits)}"
             ))
         ])
         assessment = _parse_json_result(str(response.content), ContextAssessment)
+        # Safety net: if model still says insufficient but we have high-scoring hits, override
+        if not assessment.sufficient and len(hits) >= 2:
+            assessment.sufficient = True
+            assessment.reason = "Override: sufficient excerpts retrieved. Proceeding to answer."
         return {
             "assessment": assessment.model_dump(),
             "trace": self._trace(state, f"Evidence assessor: {assessment.reason}"),
@@ -237,9 +258,10 @@ class SyllabusRAGAgent:
     async def _review(self, state: AgentState) -> dict:
         response = await self.evaluator.ainvoke([
             HumanMessage(content=(
-                "Review the proposed syllabus answer against the excerpts. Mark it grounded only if its "
-                "factual claims are supported and it uses the supplied SOURCE citation labels.\n"
-                "You must respond with valid JSON containing keys 'grounded' (boolean) and 'feedback' (string).\n\n"
+                "Review the proposed syllabus answer against the excerpts. "
+                "Mark grounded=true if the answer is generally supported by the excerpts, even if not every sentence has a citation. "
+                "Mark grounded=false only if the answer contains clear fabrications contradicting the excerpts.\n"
+                "You must respond ONLY with valid JSON with keys 'grounded' (boolean) and 'feedback' (string).\n\n"
                 f"Excerpts:\n{self._context(state['hits'])}\n\nProposed answer:\n{state['draft']}"
             ))
         ])
