@@ -2,51 +2,48 @@
 
 ## Goal
 
-Build a student-friendly, live workshop demonstration of Retrieval-Augmented Generation (RAG) using university syllabus PDFs as the knowledge base. The primary artifact is a Jupyter notebook that explains the workflow cell by cell.
+Build a full-stack, cloud-ready web application for a university syllabus Retrieval-Augmented Generation (RAG) system. The application features a premium React frontend for students and admins, a FastAPI backend, and MongoDB Atlas for database and vector storage.
+
+## Architecture & Technology Stack
+
+- **Frontend:** React (Vite) + TailwindCSS.
+- **Backend:** Python FastAPI.
+- **Database:** MongoDB Atlas (User data, Chat History, GridFS for PDF storage, Atlas Vector Search for embeddings).
+- **LLM/Embeddings:** Groq (`openai/gpt-oss-120b`) for reasoning and generation; Gemini (`gemini-embedding-001`) for embedding generation.
 
 ## Required workflow
 
-1. Load PDF documents from `data/` using LangChain's `PyPDFLoader` or an equivalent PDF loader.
-2. Split pages with LangChain `RecursiveCharacterTextSplitter` using medium-sized chunks and overlap.
-3. Store vectors locally in persistent Chroma under `vector_store/chroma/`.
-4. Use Gemini `gemini-embedding-001` embeddings. Use `RETRIEVAL_DOCUMENT` for chunks and `RETRIEVAL_QUERY` for queries.
-5. Configure each new Chroma collection with HNSW cosine distance using `configuration={"hnsw": {"space": "cosine"}}`.
-6. Preserve citation metadata for every chunk: source filename, one-based page number, chunk index, character offset, and a human-readable citation label.
-7. Implement a retriever that returns matched chunks, metadata, and distances before generation.
-8. Use LangChain prompt templates to ground answers strictly in retrieved context and cite the source labels.
-9. Use Groq `openai/gpt-oss-120b` for both a RAG-enabled search path and a no-RAG baseline path.
-10. Keep explanation Markdown cells between code stages so students can follow the code live.
+1. **Authentication:** Implement JWT-based authentication for Student and Admin roles.
+2. **Admin Document Management:** Admins can upload PDFs via the frontend. The backend stores them in MongoDB GridFS, chunks them via LangChain `RecursiveCharacterTextSplitter`, and embeds them into the Atlas Vector Search `chunks` collection.
+3. **Student Chat Interface:** Students can ask syllabus-related questions in a chat interface. The chat history is persisted in MongoDB.
+4. **RAG Pipeline (LangGraph):** The chat triggers a 6-stage backend pipeline:
+   - Route to relevant program syllabi.
+   - Broad multi-source candidate retrieval using MongoDB Atlas Vector Search (with `$vectorSearch` and `source_file` metadata filtering).
+   - Re-rank candidates.
+   - Assess evidence sufficiency.
+   - Write grounded answer with citations.
+   - Review and revise.
+5. **UI Aesthetics:** The frontend must use modern, premium designs (glassmorphism, clean typography, micro-animations) as per web application development guidelines.
 
 ## SDK and compatibility rules
 
-- Prefer current official provider documentation before changing provider-specific code.
-- Use the maintained `google-genai` SDK, not the retired `google-generativeai` SDK.
-- Use the local `GoogleGeminiEmbeddingFunction` Chroma adapter in the notebook.
+- Use the maintained `google-genai` SDK for Gemini embeddings.
 - Use Groq's GPT-OSS guidance: place RAG instructions in the user prompt, use `reasoning_effort="low"`, and use temperature `0.6` unless the user asks otherwise.
-- When the embedding model or HNSW configuration changes, increase `INDEX_VERSION` so an incompatible persisted collection is not reused.
+- Use Motor for async MongoDB operations in FastAPI.
 
-## Security and local data
+## Security and Cloud Data
 
-- Store API keys only in `.env`; never print, commit, or expose them.
-- Keep `.env.example` as a key-name-only template.
-- Keep source PDFs and generated Chroma data local and Git-ignored.
-- The PDF source of truth is `data/`; the vector database is always rebuildable.
+- Store API keys and `MONGODB_URI` only in `.env`; never print, commit, or expose them.
+- Ensure the backend exposes proper CORS headers for the frontend.
 
 ## Project memory and documentation
 
 - Maintain `MEMORY.md` when architecture, operational workflow, or key project instructions change.
-- Keep `README.md`, `requirements.txt`, and notebook setup steps aligned.
-- The notebook setup must include Windows PowerShell virtual-environment creation, activation, and dependency installation instructions.
-
-## Scope
-
-Do not implement these items until the user explicitly asks:
-
-- Deployment
+- The project is structured as a monorepo with `frontend/` and `backend/` directories.
 
 ## Verification
 
-- Do not use the browser sub-agent to verify the Streamlit web app or any other UI. The user will test manually.
+- Do not use the browser sub-agent to verify the web app UI. The user will test manually.
 - Verify code correctness through import checks, syntax parsing, and unit-level validation instead.
 
 ## Git and GitHub workflow

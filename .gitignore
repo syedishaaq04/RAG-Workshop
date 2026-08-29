@@ -1,20 +1,32 @@
-# Secrets
+# Root
 .env
-
-# Python and Jupyter
 __pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.ipynb_checkpoints/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Python venv
 .venv/
 venv/
+ENV/
 
-# Local, regenerable RAG data
-vector_store/*
-!vector_store/.gitkeep
+# Backend
+backend/.env
+backend/__pycache__/
 
-# Source documents may be licensed or large; keep them local.
-data/*.pdf
-!data/.gitkeep
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Data / legacy
+data/
+vector_store/
+*.ipynb
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

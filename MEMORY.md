@@ -1,43 +1,42 @@
 # RAG Workshop — Project Memory
 
-## Goal
+## Current Goal
 
-Teach a live, explainable Retrieval-Augmented Generation (RAG) workflow over university syllabus PDFs. The primary deliverable is `rag_workshop.ipynb`.
+The project is currently undergoing a massive architectural overhaul. It is transitioning from a local, single-file Streamlit application into a full-stack, cloud-ready web application designed to support multi-user chat, administration, and dynamic document processing.
 
-## Current architecture
+## Tech Stack Overview
 
-1. PDFs are read from `data/` with LangChain's `PyPDFLoader` (one `Document` per PDF page).
-2. `RecursiveCharacterTextSplitter` creates 1,200-character chunks with 200-character overlap.
-3. Chroma's persistent local client writes its database under `vector_store/chroma/`.
-4. A local `GoogleGeminiEmbeddingFunction` adapter uses the current `google-genai` SDK with `gemini-embedding-001` for document embeddings. The collection uses Chroma's `configuration={"hnsw": {"space": "cosine"}}` API.
-5. Retrieval embeds queries with the Gemini `RETRIEVAL_QUERY` task type, then calls Chroma similarity search.
-6. A LangChain `ChatPromptTemplate` injects retrieved context and citation labels into one user-role message, following GPT-OSS guidance.
-7. Groq's `openai/gpt-oss-120b` answers both the RAG and no-RAG comparison paths with `reasoning_effort="low"` and temperature `0.6`.
+- **Frontend:** React + Vite + TailwindCSS.
+- **Backend:** Python FastAPI.
+- **Database / Storage:** MongoDB Atlas.
+- **AI Models:** Groq (`openai/gpt-oss-120b`) for reasoning; Google Gemini (`gemini-embedding-001`) for vector embeddings.
 
-## Safety and reproducibility rules
+## Key Features & Components
 
-- Keep API keys only in `.env`; never commit it. `.env.example` contains field names only.
-- Keep syllabus PDFs and generated Chroma data local; both are ignored by Git.
-- Metadata must retain `source_file`, 1-based `page_number`, `chunk_index`, `char_start`, and `citation` so answers can be audited.
-- The index cell is idempotent. Set `REBUILD_INDEX = True` only when source PDFs or chunking settings change. Increase `INDEX_VERSION` to create a new collection after changing the embedding model or HNSW settings.
-- Run notebook cells from top to bottom. Creating embeddings and calling Groq require valid API keys and internet access.
+### 1. Database & Vector Storage (MongoDB Atlas)
+- **Users:** Stores Student and Admin profiles and credentials.
+- **GridFS:** Secure cloud storage for the raw uploaded syllabus PDF documents.
+- **Chat History:** Stores user conversation threads, context, and citations.
+- **Atlas Vector Search:** Stores embedding chunks and executes high-speed semantic retrieval using HNSW cosine similarity. The `source_file` metadata is indexed for targeted, multi-program filtering.
 
-## Workshop flow
+### 2. Backend API (FastAPI)
+- **Authentication:** JWT-based role authorization (Admin vs. Student).
+- **Admin Document Management:** Endpoints for uploading PDFs to GridFS, triggering text extraction (`PyPDFLoader`), chunking (`RecursiveCharacterTextSplitter`), and pushing vectors to Atlas.
+- **Chat Engine:** Manages streaming or synchronous LLM responses and persists history to MongoDB.
 
-1. Explain why plain LLMs lack private/current syllabus context.
-2. Load pages, inspect their metadata, and split them into overlapping chunks.
-3. Build or reopen the persistent Chroma collection.
-4. Show raw retrieved chunks before asking the LLM anything.
-5. Compare `rag_search()` with `plain_llm_search()` on the same syllabus question.
-6. Verify the returned page citations against the PDF.
+### 3. RAG Pipeline (LangGraph)
+The backend executes a 6-stage intelligent pipeline for every query:
+1. **Router Agent:** Dynamically identifies target syllabus documents (e.g. CSE or AIDS) based on the query.
+2. **Multi-Source Retriever:** Queries MongoDB Atlas Vector Search for candidate chunks.
+3. **Re-ranker Agent:** Evaluates and selects the highest-relevance candidate chunks for the specific context.
+4. **Evidence Assessor:** Verifies if the selected chunks contain sufficient evidence.
+5. **Answer Writer:** Drafts the response and explicitly cites the source documents.
+6. **Citation Reviewer & Revisor:** Ensures all factual claims are grounded and cited before finalizing the output.
 
-## Deferred work (intentionally not implemented)
+### 4. Frontend Application (React)
+- **Admin Dashboard:** Interface for uploading and managing university syllabi.
+- **Student Chat:** Premium, responsive UI allowing students to ask questions, view chat history, and see explicit citations and sources for the AI's answers.
 
-- Deployment
-
-## Web app and agent workflow
-
-- `app.py` is the Streamlit entry point. It provides a dark, workshop-friendly chat UI, a knowledge-base build control, citation chips, and a visible agent trace.
-- Reusable source code is in `src/rag_workshop/`.
-- The LangGraph workflow is bounded and 6-stage: router agent (determines relevant syllabus source PDFs dynamically) → broad multi-source candidate retrieval (with Chroma source_file metadata filters) → re-ranker agent (selects and orders highest-relevance chunks for specific topics/labs) → Groq evidence assessment → Groq answer writing → Groq citation review → at most one Groq revision. It returns the answer, source metadata, and an explainable execution trace.
-- The agent model defaults to `openai/gpt-oss-120b`; `RAG_AGENT_MODEL` in `.env` may override it.
+## Setup Requirements
+- To run the backend, a MongoDB Atlas Cluster with an Atlas Vector Search index configured on the `chunks` collection is required.
+- API Keys for Google Gemini (Embeddings) and Groq (LLM).

@@ -1,31 +1,81 @@
-# University Syllabus RAG Workshop
+# RAG Workshop — Full-Stack Syllabus Assistant
 
-This project contains a student-friendly Jupyter notebook that builds a Retrieval-Augmented Generation (RAG) chatbot over university syllabus PDFs.
+A full-stack, cloud-ready web application for university syllabus Q&A using Retrieval-Augmented Generation.
 
-## Quick start
+## Tech Stack
 
+| Layer | Technology |
+|---|---|
+| Frontend | React + Vite + TailwindCSS |
+| Backend | FastAPI (Python) |
+| Database | MongoDB Atlas (Motor/Beanie) |
+| Embeddings | Google Gemini (`text-embedding-004`) |
+| LLM | Groq (`openai/gpt-oss-120b`) |
+| RAG Pipeline | LangGraph (6-stage) |
+
+## Project Structure
+
+```
+RAG Workshop/
+├── backend/
+│   ├── .env              ← Your secrets (never commit!)
+│   ├── .env.example      ← Template
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py       ← FastAPI entrypoint
+│       ├── api/          ← auth, chat, admin routers
+│       ├── core/         ← config, db, security
+│       ├── models/       ← Beanie ODM models
+│       └── services/     ← agent, vector_store
+├── frontend/
+│   └── src/
+│       ├── pages/        ← Login, Chat, AdminDashboard
+│       ├── context/      ← AuthContext
+│       └── App.jsx
+├── AGENTS.md
+└── MEMORY.md
+```
+
+## Setup
+
+### 1. MongoDB Atlas
+1. Create a free cluster at [cloud.mongodb.com](https://cloud.mongodb.com)
+2. Create a database user and whitelist your IP
+3. Copy the connection string into `backend/.env` as `MONGODB_URI`
+4. Create an Atlas Vector Search index on the `rag_workshop.chunks` collection:
+   ```json
+   {
+     "fields": [
+       { "type": "vector", "path": "embedding", "numDimensions": 768, "similarity": "cosine" },
+       { "type": "filter", "path": "source_file" }
+     ]
+   }
+   ```
+
+### 2. Backend
 ```powershell
-python -m venv .venv
+# From repo root
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+cd backend
+# Fill in backend/.env (copy from backend/.env.example)
+# Then from repo root:
+.\.venv\Scripts\uvicorn.exe app.main:app --reload --app-dir backend
 ```
 
-1. Put one or more syllabus PDFs in `data/`.
-2. Copy `.env.example` to `.env` and fill in `GOOGLE_API_KEY` and `GROQ_API_KEY`.
-3. Start Jupyter with `jupyter lab` and run `rag_workshop.ipynb` from top to bottom.
-
-The generated Chroma database lives under `vector_store/chroma/`. It is intentionally ignored by Git because it can be rebuilt from the PDFs. The notebook uses the current Google GenAI Python SDK (`google-genai`) through a small Chroma-compatible Gemini embedding adapter.
-
-The workshop notebook shows both a grounded `rag_search()` path and a baseline `plain_llm_search()` path so students can compare the impact of retrieval.
-
-## Web app and RAG agents
-
-The Streamlit app adds a visual interface and an inspectable 6-stage LangGraph workflow: route across syllabus documents → retrieve broad balanced candidate excerpts using metadata filters → re-rank candidates to select highest-relevance chunks → assess relevance → write answer → review citations → revise once if needed. All reasoning agents use Groq's `openai/gpt-oss-120b` by default.
-
-Start it after installing dependencies and adding API keys:
-
+### 3. Frontend
 ```powershell
-streamlit run app.py
+cd frontend
+npm install
+npm run dev
 ```
 
-Use **Build knowledge base** in the sidebar to index the PDFs from `data/`. The app stores its persistent Chroma vectors in `vector_store/chroma/` and displays every retrieved source citation with the answer.
+The app will be at `http://localhost:5173` and API at `http://localhost:8000`.
+
+## Creating First Admin User
+
+Use the `/api/auth/register` endpoint (or curl/Postman) to create an admin:
+```bash
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@uni.edu", "password": "yourpassword", "role": "admin"}'
+```
