@@ -69,6 +69,7 @@ class RoutingDecision(BaseModel):
 
 class AgentState(TypedDict, total=False):
     question: str
+    history: list[dict]  # conversation history [{role, content}]
     target_sources: list[str]
     hits: list[dict]
     assessment: dict
@@ -160,8 +161,8 @@ class SyllabusRAGAgent:
 
     async def _retrieve(self, state: AgentState) -> dict:
         targets = state.get("target_sources")
-        # Fetch a large candidate pool (20) so the reranker has enough to work with
-        retrieved_chunks = await self.vector_store.retrieve(state["question"], k=20, source_files=targets)
+        # Fetch a larger candidate pool (25) to give reranker better material
+        retrieved_chunks = await self.vector_store.retrieve(state["question"], k=25, source_files=targets)
         hits = [chunk.to_dict() for chunk in retrieved_chunks]
         sources_found = set(h["source_file"] for h in hits)
         return {
@@ -171,37 +172,38 @@ class SyllabusRAGAgent:
 
     async def _rerank(self, state: AgentState) -> dict:
         candidates = state.get("hits", [])
-        if len(candidates) <= 4:
+        if len(candidates) <= 5:
             return {
                 "hits": candidates,
-                "trace": self._trace(state, f"Re-ranker: Candidate pool ({len(candidates)} chunks) directly passed to assessor."),
+                "trace": self._trace(state, f"Re-ranker: Candidate pool ({len(candidates)} chunks) directly passed to writer."),
             }
 
         candidate_snippets = "\n\n".join(
-            f"CHUNK [{i}] {c['citation']}:\n{c['text'][:350]}..."
+            f"CHUNK [{i}] {c['citation']}:\n{c['text'][:400]}..."
             for i, c in enumerate(candidates)
         )
         response = await self.evaluator.ainvoke([
             HumanMessage(content=(
-                "You are an expert RAG Re-ranker Agent for a university syllabus chatbot. "
-                "Select and order the most relevant chunks to answer the question.\n\n"
+                "You are an expert RAG Re-ranker for a university knowledge base chatbot. "
+                "Your goal is to select the most directly relevant chunks for the student's question.\n\n"
                 f"Question: {state['question']}\n\n"
                 f"Candidate Chunks:\n{candidate_snippets}\n\n"
-                "STRICT RULES:\n"
-                "1. If the question asks about lab experiments or practicals, ONLY select chunks that contain numbered experiment lists (e.g. '1. Stack using Array', '2. Queue...').\n"
-                "2. If the question asks about a specific course, ONLY select chunks from that course's section (matching course code or name).\n"
-                "3. EXCLUDE generic header chunks (university name, PO/CO mapping tables, course objective lists) unless they directly answer the question.\n"
-                "4. Select the top 5 most directly relevant chunks. If fewer than 5 are relevant, return only those.\n"
-                "5. Respond with valid JSON only:\n"
+                "RULES:\n"
+                "1. Select chunks that directly address the question topic (courses, subjects, experiments, regulations, fees, etc.).\n"
+                "2. For questions about a semester's courses, include ALL course types: core, electives, labs, and theory.\n"
+                "3. For questions about lab experiments, prefer chunks with numbered experiment lists.\n"
+                "4. Do NOT exclude any chunk type based on its category — include whatever is most relevant to the question.\n"
+                "5. Select the top 6 most directly relevant chunks. If fewer than 6 are relevant, return only those.\n"
+                "6. Respond with valid JSON only:\n"
                 "   {\"ranked_indices\": [3, 0, 4, 1], \"reason\": \"brief explanation\"}\n"
             ))
         ])
         decision = _parse_json_result(str(response.content), RerankingResult)
         valid_indices = [idx for idx in decision.ranked_indices if 0 <= idx < len(candidates)]
         if not valid_indices:
-            selected_hits = candidates[:5]
+            selected_hits = candidates[:6]
         else:
-            selected_hits = [candidates[idx] for idx in valid_indices[:5]]
+            selected_hits = [candidates[idx] for idx in valid_indices[:6]]
 
         return {
             "hits": selected_hits,
@@ -210,37 +212,17 @@ class SyllabusRAGAgent:
 
     async def _assess(self, state: AgentState) -> dict:
         hits = state.get("hits", [])
-        # Fast-path: if we have 0 chunks, decline immediately without an LLM call
+        # Fast rule-based assessment: skip LLM call entirely for speed
+        # Only decline if there are literally no hits at all
         if not hits:
             return {
                 "assessment": {"sufficient": False, "reason": "No excerpts were retrieved from the vector store."},
                 "trace": self._trace(state, "Evidence assessor: No excerpts retrieved — declining."),
             }
-
-        response = await self.evaluator.ainvoke([
-            HumanMessage(content=(
-                "You are an Evidence Assessor for a university syllabus chatbot. "
-                "Your ONLY job is to decide if the retrieved excerpts contain ANY relevant content "
-                "that could help answer the question.\n\n"
-                "IMPORTANT RULES:\n"
-                "- Mark sufficient=true whenever the excerpts mention the topic at all, even partially.\n"
-                "- Mark sufficient=false ONLY if the excerpts are completely unrelated to the question.\n"
-                "- Do NOT require complete or perfect answers — partial information is enough.\n"
-                "- University syllabus content (course names, modules, credits, labs, regulations) counts as relevant.\n\n"
-                "You must respond ONLY with valid JSON with exactly these keys:\n"
-                "  {\"sufficient\": true/false, \"reason\": \"brief explanation\"}\n\n"
-                f"Question: {state['question']}\n\n"
-                f"Retrieved Excerpts:\n{self._context(hits)}"
-            ))
-        ])
-        assessment = _parse_json_result(str(response.content), ContextAssessment)
-        # Safety net: if model still says insufficient but we have high-scoring hits, override
-        if not assessment.sufficient and len(hits) >= 2:
-            assessment.sufficient = True
-            assessment.reason = "Override: sufficient excerpts retrieved. Proceeding to answer."
+        # With any retrieved hits, proceed to writing — the writer handles insufficient evidence gracefully
         return {
-            "assessment": assessment.model_dump(),
-            "trace": self._trace(state, f"Evidence assessor: {assessment.reason}"),
+            "assessment": {"sufficient": True, "reason": f"Fast-path: {len(hits)} excerpts retrieved — proceeding to answer."},
+            "trace": self._trace(state, f"Evidence assessor: {len(hits)} excerpts retrieved — proceeding."),
         }
 
     @staticmethod
@@ -248,6 +230,17 @@ class SyllabusRAGAgent:
         return "write" if state["assessment"]["sufficient"] else "decline"
 
     async def _write(self, state: AgentState) -> dict:
+        # Build conversation history context for multi-turn awareness
+        history = state.get("history", [])
+        history_str = ""
+        if history:
+            history_lines = []
+            for msg in history[-6:]:  # use last 6 messages (3 turns) for context
+                role = "Student" if msg["role"] == "user" else "Assistant"
+                history_lines.append(f"{role}: {msg['content'][:300]}")
+            history_str = "\n".join(history_lines)
+            history_str = f"\n\nPREVIOUS CONVERSATION (for context only, do NOT re-answer unless asked):\n{history_str}\n"
+
         response = await self.writer.ainvoke([
             HumanMessage(content=(
                 "You are Campus Nexus, the University Knowledge Base Assistant. Answer only from the provided excerpts. "
@@ -258,7 +251,9 @@ class SyllabusRAGAgent:
                 "- Use bold headings for different sections.\n"
                 "- Use bullet points or numbered lists for enumerating items (like courses or experiments).\n"
                 "- If presenting comparative or structured data, use Markdown tables.\n"
-                "- Make the answer easily readable and well-spaced.\n\n"
+                "- Make the answer easily readable and well-spaced.\n"
+                "- Be COMPREHENSIVE: if the question asks for all courses in a semester, include ALL courses mentioned across all retrieved excerpts, not just a subset.\n\n"
+                f"{history_str}"
                 f"Question: {state['question']}\n\nExcerpts:\n{self._context(state['hits'])}"
             ))
         ])
@@ -333,8 +328,13 @@ class SyllabusRAGAgent:
         builder.add_edge("finalize", END)
         return builder.compile()
 
-    async def ask(self, question: str) -> AgentResult:
-        state = await self.graph.ainvoke({"question": question, "revision_count": 0, "trace": []})
+    async def ask(self, question: str, history: list[dict] | None = None) -> AgentResult:
+        state = await self.graph.ainvoke({
+            "question": question,
+            "history": history or [],
+            "revision_count": 0,
+            "trace": []
+        })
         hits = state.get("hits", [])
         return {
             "answer": state["answer"],

@@ -34,7 +34,9 @@ async def send_message(request: ChatRequest, user=Depends(get_current_user)):
     vs = MongoDBVectorStore(db)
     agent = SyllabusRAGAgent(vs)
 
-    result = await agent.ask(request.question)
+    # Pass conversation history for multi-turn context (exclude the just-appended user message)
+    history_for_agent = chat.messages[:-1]  # all messages before current question
+    result = await agent.ask(request.question, history=history_for_agent)
 
     assistant_msg = {
         "role": "assistant",

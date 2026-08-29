@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { X, Lock, Loader2 } from 'lucide-react';
 
+const API = 'http://localhost:8000';
+
 export default function ChangePasswordModal({ isOpen, onClose }) {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -18,11 +20,10 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      // Use axios default headers which already carry the Bearer token from AuthContext
       await axios.put(
-        '/api/auth/password',
-        { old_password: oldPassword, new_password: newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API}/api/auth/password`,
+        { old_password: oldPassword, new_password: newPassword }
       );
       setSuccess('Password updated successfully.');
       setOldPassword('');
