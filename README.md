@@ -1,17 +1,23 @@
-# RAG Workshop — Full-Stack Syllabus Assistant
+# Campus Nexus — University Knowledge Base
 
-A full-stack, cloud-ready web application for university syllabus Q&A using Retrieval-Augmented Generation.
+A full-stack, cloud-ready web application for a comprehensive university knowledge base using Retrieval-Augmented Generation (RAG).
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + Vite + TailwindCSS |
+| Frontend | React + Vite + TailwindCSS v4 |
 | Backend | FastAPI (Python) |
 | Database | MongoDB Atlas (Motor/Beanie) |
-| Embeddings | Google Gemini (`text-embedding-004`) |
+| Embeddings | Google Gemini (`gemini-embedding-001`) |
 | LLM | Groq (`openai/gpt-oss-120b`) |
 | RAG Pipeline | LangGraph (6-stage) |
+
+## Features
+- **Multi-Format Uploads**: Admins can upload `.pdf`, `.docx`, `.txt`, and `.csv` files representing policies, fees, syllabi, exam schedules, etc.
+- **Dynamic Routing**: The LangGraph pipeline dynamically categorizes queries (e.g. Admissions, Fees, Syllabus) and filters candidates based on exact document metadata to ensure precision.
+- **Hybrid Search**: Combines Atlas Vector Search (Cosine Similarity) with intelligent Keyword Bigram fallback to guarantee data retrieval for highly specific lists or experiments.
+- **Strict Grounding**: A multi-stage review process ensures every factual claim in the chatbot's response is directly cited from the uploaded knowledge base.
 
 ## Project Structure
 
@@ -19,7 +25,6 @@ A full-stack, cloud-ready web application for university syllabus Q&A using Retr
 RAG Workshop/
 ├── backend/
 │   ├── .env              ← Your secrets (never commit!)
-│   ├── .env.example      ← Template
 │   ├── requirements.txt
 │   └── app/
 │       ├── main.py       ← FastAPI entrypoint
@@ -46,7 +51,7 @@ RAG Workshop/
    ```json
    {
      "fields": [
-       { "type": "vector", "path": "embedding", "numDimensions": 768, "similarity": "cosine" },
+       { "type": "vector", "path": "embedding", "numDimensions": 3072, "similarity": "cosine" },
        { "type": "filter", "path": "source_file" }
      ]
    }
@@ -73,7 +78,7 @@ The app will be at `http://localhost:5173` and API at `http://localhost:8000`.
 
 ## Creating First Admin User
 
-Use the `/api/auth/register` endpoint (or curl/Postman) to create an admin:
+Use the `/api/auth/register` endpoint to create an admin user:
 ```bash
 curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
