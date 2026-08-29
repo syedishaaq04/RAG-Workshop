@@ -65,8 +65,12 @@ export default function AdminDashboard() {
   };
 
   const handleUpload = async (file) => {
-    if (!file || !file.name.endsWith('.pdf')) {
-      setError('Only PDF files are allowed.');
+    if (!file) return;
+    const allowed = ['.pdf', '.docx', '.txt', '.csv'];
+    const ext = file.name.slice((file.name.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
+    
+    if (!allowed.includes('.' + ext)) {
+      setError('Only PDF, DOCX, TXT, and CSV files are allowed');
       return;
     }
     setError('');
@@ -122,8 +126,8 @@ export default function AdminDashboard() {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-              <p className="text-sm text-slate-500">Manage university syllabus documents</p>
+              <h1 className="text-xl font-bold text-white">Document Management</h1>
+              <p className="text-sm text-slate-400">Upload and monitor university knowledge base documents.</p>
             </div>
           </div>
           <button
@@ -162,7 +166,7 @@ export default function AdminDashboard() {
           <input
             id="file-input"
             type="file"
-            accept=".pdf"
+            accept=".pdf,.docx,.txt,.csv"
             className="hidden"
             onChange={(e) => handleUpload(e.target.files[0])}
           />
@@ -170,7 +174,7 @@ export default function AdminDashboard() {
             {uploading ? (
               <>
                 <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
-                <p className="text-slate-400 text-sm">Uploading and processing PDF…</p>
+                <p className="text-slate-400 text-sm">Uploading and processing document…</p>
               </>
             ) : (
               <>
@@ -178,10 +182,10 @@ export default function AdminDashboard() {
                   <Upload className="w-7 h-7 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-slate-300 font-medium">Drop a syllabus PDF here</p>
+                  <p className="text-slate-300 font-medium">Drop a document here</p>
                   <p className="text-slate-500 text-sm mt-1">or click to select a file</p>
                 </div>
-                <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-500">PDF only</span>
+                <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-500">PDF, DOCX, TXT, CSV</span>
               </>
             )}
           </div>

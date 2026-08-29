@@ -1,8 +1,8 @@
-# RAG Workshop Project Instructions
+# Campus Nexus (University Knowledge Base) Project Instructions
 
 ## Goal
 
-Build a full-stack, cloud-ready web application for a university syllabus Retrieval-Augmented Generation (RAG) system. The application features a premium React frontend for students and admins, a FastAPI backend, and MongoDB Atlas for database and vector storage.
+Build a full-stack, cloud-ready web application for a comprehensive University Knowledge Base (Campus Nexus). The application features a premium React frontend for students and admins, a FastAPI backend, and MongoDB Atlas for database and vector storage. It supports answering queries on Admissions, Departments, Courses, Fees, Exams, Academic Calendar, Hostel, Library, Clubs, Placements, Scholarships, Policies, Events, and more.
 
 ## Architecture & Technology Stack
 
@@ -14,11 +14,11 @@ Build a full-stack, cloud-ready web application for a university syllabus Retrie
 ## Required workflow
 
 1. **Authentication:** Implement JWT-based authentication for Student and Admin roles.
-2. **Admin Document Management:** Admins can upload PDFs via the frontend. The backend stores them in MongoDB GridFS, chunks them via LangChain `RecursiveCharacterTextSplitter`, and embeds them into the Atlas Vector Search `chunks` collection.
-3. **Student Chat Interface:** Students can ask syllabus-related questions in a chat interface. The chat history is persisted in MongoDB.
+2. **Admin Document Management:** Admins can upload multiple document formats (`.pdf`, `.docx`, `.txt`, `.csv`) via the frontend. The backend stores them in MongoDB GridFS, chunks them via LangChain, and embeds them into the Atlas Vector Search `chunks` collection.
+3. **Student Chat Interface:** Students can ask campus-related questions in a chat interface. The chat history is persisted in MongoDB.
 4. **RAG Pipeline (LangGraph):** The chat triggers a 6-stage backend pipeline:
-   - Route to relevant program syllabi.
-   - Broad multi-source candidate retrieval using MongoDB Atlas Vector Search (with `$vectorSearch` and `source_file` metadata filtering).
+   - **Router**: Analyzes the query and identifies which document(s) from the knowledge base are most likely to contain the required information.
+   - Broad multi-source candidate retrieval using MongoDB Atlas Vector Search (with `$vectorSearch`, hybrid keyword fallback, and `source_file` metadata filtering).
    - Re-rank candidates.
    - Assess evidence sufficiency.
    - Write grounded answer with citations.
@@ -49,7 +49,6 @@ Build a full-stack, cloud-ready web application for a university syllabus Retrie
 ## Git and GitHub workflow
 
 - Make a verified local commit after each meaningful milestone.
-- The GitHub remote is `https://github.com/syedishaaq04/RAG-Workshop.git` and must be named `origin`.
 - After every verified milestone commit, push the current branch to `origin`.
 - Never force-push.
 - Stop and report any authentication, network, remote, merge, or branch-protection failure.

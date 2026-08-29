@@ -1,8 +1,8 @@
-# RAG Workshop — Project Memory
+# Campus Nexus (University Knowledge Base) — Project Memory
 
 ## Current Goal
 
-The project is currently undergoing a massive architectural overhaul. It is transitioning from a local, single-file Streamlit application into a full-stack, cloud-ready web application designed to support multi-user chat, administration, and dynamic document processing.
+The project is currently undergoing a massive architectural overhaul. It is transitioning from a local, single-file Streamlit application into a full-stack, cloud-ready web application (Campus Nexus) designed to support multi-user chat, administration, and dynamic multi-format document processing for a comprehensive university knowledge base.
 
 ## Tech Stack Overview
 
@@ -19,18 +19,18 @@ The project is currently undergoing a massive architectural overhaul. It is tran
 
 ### 1. Database & Vector Storage (MongoDB Atlas)
 - **Users:** Stores Student and Admin profiles and credentials.
-- **GridFS:** Secure cloud storage for the raw uploaded syllabus PDF documents.
+- **GridFS:** Secure cloud storage for the raw uploaded documents (`.pdf`, `.docx`, `.txt`, `.csv`).
 - **Chat History:** Stores user conversation threads, context, and citations.
 - **Atlas Vector Search:** Stores embedding chunks and executes high-speed semantic retrieval using HNSW cosine similarity. The `source_file` metadata is indexed for targeted, multi-program filtering.
 
 ### 2. Backend API (FastAPI)
 - **Authentication:** JWT-based role authorization (Admin vs. Student).
-- **Admin Document Management:** Endpoints for uploading PDFs to GridFS, triggering text extraction (`PyPDFLoader`), chunking (`RecursiveCharacterTextSplitter`), and pushing vectors to Atlas.
+- **Admin Document Management:** Endpoints for uploading files to GridFS, triggering text extraction (`PyPDFLoader`, `Docx2txtLoader`, `TextLoader`, `CSVLoader`), chunking (`RecursiveCharacterTextSplitter`), and pushing vectors to Atlas.
 - **Chat Engine:** Manages streaming or synchronous LLM responses and persists history to MongoDB.
 
 ### 3. RAG Pipeline (LangGraph)
 The backend executes a 6-stage intelligent pipeline for every query:
-1. **Router Agent:** Dynamically identifies target syllabus documents (e.g. CSE or AIDS) based on the query.
+1. **Router Agent:** Dynamically identifies target documents from the knowledge base based on the user's intent and document metadata.
 2. **Multi-Source Retriever:** Queries MongoDB Atlas Vector Search for candidate chunks.
 3. **Re-ranker Agent:** Evaluates and selects the highest-relevance candidate chunks for the specific context.
 4. **Evidence Assessor:** Verifies if the selected chunks contain sufficient evidence.
@@ -38,7 +38,7 @@ The backend executes a 6-stage intelligent pipeline for every query:
 6. **Citation Reviewer & Revisor:** Ensures all factual claims are grounded and cited before finalizing the output.
 
 ### 4. Frontend Application (React)
-- **Admin Dashboard:** Interface for uploading and managing university syllabi.
+- **Admin Dashboard:** Interface for uploading and managing university knowledge base documents (PDFs, Docs, Text, CSV).
 - **Student Chat:** Premium, responsive UI allowing students to ask questions, view chat history, and see explicit citations and sources for the AI's answers.
 
 ## Setup Requirements

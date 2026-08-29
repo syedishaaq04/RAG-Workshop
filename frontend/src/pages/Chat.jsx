@@ -113,7 +113,7 @@ export default function Chat() {
             <BookOpen className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">SyllabusAI</p>
+            <p className="text-sm font-bold text-white">Campus Nexus</p>
             <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
           </div>
         </div>
@@ -190,7 +190,7 @@ export default function Chat() {
         <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-slate-300">University Syllabus Assistant</span>
+            <span className="text-sm font-medium text-slate-300">University Knowledge Base</span>
           </div>
           <span className="text-xs text-slate-600 bg-white/5 px-3 py-1 rounded-full border border-white/5">
             Powered by Groq + Gemini
@@ -204,12 +204,12 @@ export default function Chat() {
               <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-5">
                 <BookMarked className="w-8 h-8 text-blue-400/60" />
               </div>
-              <h2 className="text-xl font-semibold text-slate-300 mb-2">Ask about your syllabus</h2>
+              <h2 className="text-xl font-semibold text-slate-300 mb-2">Ask Campus Nexus</h2>
               <p className="text-slate-500 text-sm max-w-md">
-                Ask questions about course content, lab experiments, electives, regulations, or anything from the uploaded syllabi.
+                Ask questions about courses, admissions, fees, exams, hostel policies, electives, or anything from the university knowledge base.
               </p>
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md">
-                {['What are the lab experiments for Data Structures?', 'List the electives in CSE program.', 'What are the regulations for AI-DS?', 'Compare CSE and AI-DS syllabi.'].map((q) => (
+                {['What is the fee structure for B.Tech?', 'List the electives in CSE program.', 'What are the rules for hostel accommodation?', 'When does the odd semester begin?'].map((q) => (
                   <button
                     key={q}
                     onClick={() => setInput(q)}
@@ -266,7 +266,7 @@ export default function Chat() {
               </div>
               <div className="px-5 py-4 rounded-2xl rounded-tl-sm bg-white/5 border border-white/8 flex items-center gap-2">
                 <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
-                <span className="text-sm text-slate-400">Searching syllabus…</span>
+                <span className="text-sm text-slate-400">Searching knowledge base…</span>
               </div>
             </div>
           )}
@@ -281,7 +281,7 @@ export default function Chat() {
               id="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about courses, experiments, regulations…"
+              placeholder="Ask about admissions, fees, courses, regulations…"
               disabled={loading}
               className="w-full px-5 pr-14 py-4 bg-white/5 border border-white/10 rounded-2xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all disabled:opacity-60 text-sm"
             />
@@ -295,7 +295,7 @@ export default function Chat() {
             </button>
           </form>
           <p className="text-center text-xs text-slate-700 mt-3">
-            Answers are grounded in indexed university syllabi. Always verify important information.
+            Answers are grounded in indexed university documents. Always verify important information.
           </p>
         </div>
       </main>

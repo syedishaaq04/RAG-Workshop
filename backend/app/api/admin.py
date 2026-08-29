@@ -8,8 +8,8 @@ from typing import List
 router = APIRouter()
 
 
-async def process_pdf_background(doc_id: str, file_content: bytes, filename: str):
-    """Background task: embed PDF chunks into Atlas Vector Search."""
+async def process_document_background(doc_id: str, file_content: bytes, filename: str):
+    """Background task: extract text, chunk, and embed into Atlas Vector Search."""
     doc = await SyllabusDocument.get(doc_id)
     if not doc:
         return
@@ -19,7 +19,7 @@ async def process_pdf_background(doc_id: str, file_content: bytes, filename: str
     try:
         db = get_db()  # reuse the shared Motor client
         vs = MongoDBVectorStore(db)
-        chunk_count = await vs.process_pdf(file_content, filename)
+        chunk_count = await vs.process_document(file_content, filename)
 
         doc.chunks_indexed = chunk_count
         doc.status = "indexed"
@@ -36,8 +36,9 @@ async def upload_document(
     file: UploadFile = File(...),
     admin=Depends(get_current_admin)
 ):
-    if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    allowed_extensions = ('.pdf', '.docx', '.txt', '.csv')
+    if not file.filename.lower().endswith(allowed_extensions):
+        raise HTTPException(status_code=400, detail="Only PDF, DOCX, TXT, and CSV files are allowed")
 
     content = await file.read()
 
@@ -48,7 +49,7 @@ async def upload_document(
     doc = SyllabusDocument(filename=file.filename)
     await doc.insert()
 
-    background_tasks.add_task(process_pdf_background, str(doc.id), content, file.filename)
+    background_tasks.add_task(process_document_background, str(doc.id), content, file.filename)
     return {"message": "Document upload started", "id": str(doc.id)}
 
 

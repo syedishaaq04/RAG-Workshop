@@ -2,7 +2,7 @@ import os
 import uuid
 import tempfile
 from motor.motor_asyncio import AsyncIOMotorClient
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, CSVLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from google import genai
 from google.genai import types
@@ -52,14 +52,27 @@ class MongoDBVectorStore:
         )
         return response.embeddings[0].values
 
-    async def process_pdf(self, file_content: bytes, filename: str) -> int:
+    async def process_document(self, file_content: bytes, filename: str) -> int:
+        # Determine extension
+        ext = os.path.splitext(filename)[1].lower()
+        
         # Save temp file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
             tmp.write(file_content)
             tmp_path = tmp.name
 
         try:
-            loader = PyPDFLoader(tmp_path)
+            if ext == '.pdf':
+                loader = PyPDFLoader(tmp_path)
+            elif ext == '.docx':
+                loader = Docx2txtLoader(tmp_path)
+            elif ext == '.txt':
+                loader = TextLoader(tmp_path, encoding='utf-8')
+            elif ext == '.csv':
+                loader = CSVLoader(tmp_path, encoding='utf-8')
+            else:
+                raise ValueError(f"Unsupported file extension: {ext}")
+                
             docs = loader.load()
             splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=160)
             chunks = splitter.split_documents(docs)
