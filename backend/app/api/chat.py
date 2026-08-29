@@ -2,50 +2,53 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from app.api.auth import get_current_user
 from app.models.chat import ChatHistory
-from app.core.database import init_db
+from app.core.database import get_db
 from app.services.vector_store import MongoDBVectorStore
 from app.services.agent import SyllabusRAGAgent
-from typing import List
+from typing import List, Optional
 
 router = APIRouter()
 
+
 class ChatRequest(BaseModel):
-    chat_id: str = None
+    chat_id: Optional[str] = None
     question: str
+
 
 @router.post("/message")
 async def send_message(request: ChatRequest, user=Depends(get_current_user)):
-    client, db = await init_db()
-    
+    db = get_db()
+
     # Get or create ChatHistory
+    chat = None
     if request.chat_id:
         chat = await ChatHistory.get(request.chat_id)
         if not chat or chat.user_id != str(user.id):
-            chat = ChatHistory(user_id=str(user.id), title=request.question[:30])
-    else:
-        chat = ChatHistory(user_id=str(user.id), title=request.question[:30])
-        
+            chat = None  # invalid reference — start fresh
+
+    if chat is None:
+        chat = ChatHistory(user_id=str(user.id), title=request.question[:40])
+
     chat.messages.append({"role": "user", "content": request.question})
-    
+
     vs = MongoDBVectorStore(db)
     agent = SyllabusRAGAgent(vs)
-    
-    # Process
+
     result = await agent.ask(request.question)
-    
+
     assistant_msg = {
         "role": "assistant",
         "content": result["answer"],
-        "citations": result["citations"],
-        "trace": result["trace"]
+        "citations": result.get("citations", []),
     }
     chat.messages.append(assistant_msg)
     await chat.save()
-    
+
     return {
         "chat_id": str(chat.id),
-        "message": assistant_msg
+        "message": assistant_msg,
     }
+
 
 @router.get("/history", response_model=List[dict])
 async def get_history(user=Depends(get_current_user)):

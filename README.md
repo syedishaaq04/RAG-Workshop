@@ -53,14 +53,14 @@ RAG Workshop/
    ```
 
 ### 2. Backend
-```powershell
-# From repo root
-.\.venv\Scripts\Activate.ps1
-cd backend
-# Fill in backend/.env (copy from backend/.env.example)
-# Then from repo root:
-.\.venv\Scripts\uvicorn.exe app.main:app --reload --app-dir backend
-```
+1. Open a **new** PowerShell terminal.
+2. Navigate to the backend folder: `cd backend`
+3. Ensure your virtual environment is created (`python -m venv .venv`) and dependencies are installed (`.\.venv\Scripts\python.exe -m pip install -r requirements.txt`).
+4. Fill in `backend/.env` with your API keys and MongoDB connection string.
+5. Start the FastAPI server:
+   ```powershell
+   .\.venv\Scripts\uvicorn.exe app.main:app --reload
+   ```
 
 ### 3. Frontend
 ```powershell

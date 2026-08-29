@@ -17,7 +17,7 @@ class MongoDBVectorStore:
         self.db = db
         self.collection = db.chunks
         self.gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        self.embedding_model = "models/text-embedding-004" # Current updated embedding model for google-genai
+        self.embedding_model = "models/gemini-embedding-001" # Current updated embedding model for google-genai
     
     async def get_embedding_batch(self, texts: list[str]) -> list[list[float]]:
         # Handle batching (max 100 per batch for Gemini embeddings typically)

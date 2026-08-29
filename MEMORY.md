@@ -6,7 +6,11 @@ The project is currently undergoing a massive architectural overhaul. It is tran
 
 ## Tech Stack Overview
 
-- **Frontend:** React + Vite + TailwindCSS.
+- **Frontend:**
+  - React (Vite) + TailwindCSS v4.
+  - *Tailwind v4 Setup:* Uses the `@tailwindcss/vite` plugin in `vite.config.js` and `@import "tailwindcss";` in `index.css`. No `tailwind.config.js` or `postcss.config.js` needed.
+  - React Router DOM for routing.
+  - Axios for API requests with an Axios interceptor for appending the JWT token.
 - **Backend:** Python FastAPI.
 - **Database / Storage:** MongoDB Atlas.
 - **AI Models:** Groq (`openai/gpt-oss-120b`) for reasoning; Google Gemini (`gemini-embedding-001`) for vector embeddings.
