@@ -66,6 +66,7 @@ RAG Workshop/
    ```powershell
    .\.venv\Scripts\uvicorn.exe app.main:app --reload
    ```
+6. The backend is live at 'https://campus-nexus-backend.onrender.com'
 
 ### 3. Frontend
 ```powershell
@@ -75,6 +76,12 @@ npm run dev
 ```
 
 The app will be at `http://localhost:5173` and API at `http://localhost:8000`.
+The frontend is live at 'https://campus-nexus-kohl.vercel.app/'
+
+Use these credentials to login as student:
+
+Email: 'student@university.edu' 
+Password: 'student@04'
 
 ## Creating First Admin User
 
