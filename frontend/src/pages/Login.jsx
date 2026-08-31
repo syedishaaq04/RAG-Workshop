@@ -49,8 +49,8 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/30 mb-5 backdrop-blur-md">
             <BookOpen className="w-8 h-8 text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">SyllabusAI</h1>
-          <p className="mt-2 text-slate-400 text-sm">Your intelligent university syllabus assistant</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Campus Nexus</h1>
+          <p className="mt-2 text-slate-400 text-sm">Your intelligent university knowledge base</p>
         </div>
 
         {/* Card */}
