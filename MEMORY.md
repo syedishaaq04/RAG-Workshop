@@ -38,8 +38,14 @@ The backend executes a 6-stage intelligent pipeline for every query:
 6. **Citation Reviewer & Revisor:** Ensures all factual claims are grounded and cited before finalizing the output.
 
 ### 4. Frontend Application (React)
-- **Admin Dashboard:** Interface for uploading and managing university knowledge base documents (PDFs, Docs, Text, CSV).
-- **Student Chat:** Premium, responsive UI allowing students to ask questions, view chat history, and see explicit citations and sources for the AI's answers.
+- **Admin Dashboard:** Interface for uploading and managing university knowledge base documents (PDFs, Docs, Text, CSV) and bulk creating new student accounts.
+- **Student Chat:** Premium, responsive UI allowing students to ask questions, view chat history, and see explicit citations. Now features a mobile-responsive sidebar drawer for smaller screens.
+- **Guest Mode:** Non-authenticated users can use a temporary guest login with an ephemeral chat history.
+
+## Deployment Details
+- **Frontend:** Deployed on Vercel (`https://campus-nexus-kohl.vercel.app/`).
+- **Backend:** Deployed on Render (`https://campus-nexus-backend.onrender.com/`). Uses `CORS_ORIGINS` to securely restrict API access to the Vercel frontend.
+- **Database:** MongoDB Atlas is used for both operational data and vector storage.
 
 ## Setup Requirements
 - To run the backend, a MongoDB Atlas Cluster with an Atlas Vector Search index configured on the `chunks` collection is required.

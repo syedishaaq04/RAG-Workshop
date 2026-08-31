@@ -3,7 +3,7 @@ import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  BookOpen, Send, LogOut, LayoutDashboard, ChevronDown,
+  BookOpen, Send, LogOut, LayoutDashboard, ChevronDown, Menu, X,
   Loader2, Bot, User, BookMarked, Sparkles, Plus, Trash2, Settings
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -19,6 +19,7 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const messagesEndRef = useRef(null);
 
@@ -98,19 +99,34 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-screen w-full flex bg-[#0B0F19] text-slate-200 overflow-hidden">
+    <div className="h-screen w-full flex bg-[#0B0F19] text-slate-200 overflow-hidden relative">
       
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-10 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-72 flex flex-col bg-[#111827] border-r border-white/5 shrink-0">
+      <aside className={`absolute md:relative z-20 h-full w-72 flex flex-col bg-[#111827] border-r border-white/5 shrink-0 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
         {/* Brand */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/5">
-          <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-blue-400" />
+        <div className="flex items-center justify-between px-5 py-5 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Campus Nexus</p>
+              <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-bold text-white">Campus Nexus</p>
-            <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
-          </div>
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* New Chat */}
@@ -191,10 +207,15 @@ export default function Chat() {
       {/* Main Chat */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-slate-300">University Knowledge Base</span>
+        <header className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-1 text-slate-400 hover:text-white bg-white/5 rounded-lg border border-white/10">
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-400 hidden md:block" />
+              <span className="text-sm font-medium text-slate-300">University Knowledge Base</span>
+            </div>
           </div>
           <span className="text-xs text-slate-600 bg-white/5 px-3 py-1 rounded-full border border-white/5">
             Powered by Groq + Gemini

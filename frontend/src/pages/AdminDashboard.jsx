@@ -160,7 +160,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <button
               id="back-to-chat-btn"
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
 
         {/* Documents Table */}
         <div className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-white/8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="font-semibold text-slate-200 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-blue-400" />
               Indexed Documents
