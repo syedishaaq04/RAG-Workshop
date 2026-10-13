@@ -155,7 +155,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-200 px-4 py-8 relative transition-colors duration-200">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-200 px-4 py-8 relative transition-colors duration-200">
       {/* Ambient background glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 right-10 w-[500px] h-[500px] rounded-full bg-blue-500/5 dark:bg-blue-600/10 blur-3xl" />
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
             <button
               id="back-to-chat-btn"
               onClick={() => navigate('/')}
-              className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all shadow-xs cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/10 transition-all shadow-xs cursor-pointer"
               title="Back to Chat"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
             <button
               id="refresh-btn"
               onClick={() => fetchDocuments()}
-              className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all shadow-xs cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/10 transition-all shadow-xs cursor-pointer"
               title="Refresh document status"
             >
               <RefreshCw className="w-4 h-4" />
@@ -219,8 +219,8 @@ export default function AdminDashboard() {
           onClick={() => document.getElementById('file-input').click()}
           className={`relative mb-8 rounded-3xl border-2 border-dashed p-10 sm:p-12 text-center transition-all cursor-pointer ${
             dragOver
-              ? 'border-blue-500 bg-blue-50/60 dark:border-blue-500/60 dark:bg-blue-500/10'
-              : 'border-slate-300 dark:border-white/10 bg-white/70 dark:bg-white/3 hover:border-blue-400 dark:hover:border-white/20 hover:bg-blue-50/20 dark:hover:bg-white/5 shadow-xs'
+              ? 'border-blue-500 bg-blue-50/70 dark:border-blue-500/60 dark:bg-blue-500/10'
+              : 'border-slate-300 dark:border-white/10 bg-white dark:bg-white/3 hover:border-blue-500 dark:hover:border-white/20 hover:bg-blue-50/30 dark:hover:bg-white/5 shadow-xs'
           }`}
         >
           <input
@@ -263,19 +263,19 @@ export default function AdminDashboard() {
         </div>
 
         {/* Documents Table */}
-        <div className="bg-white dark:bg-white/4 border border-slate-200/90 dark:border-white/8 rounded-3xl overflow-hidden mb-8 shadow-xs">
-          <div className="px-6 py-4.5 border-b border-slate-200/80 dark:border-white/8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white dark:bg-white/4 border border-slate-200 dark:border-white/8 rounded-3xl overflow-hidden mb-8 shadow-sm">
+          <div className="px-6 py-4.5 border-b border-slate-200 dark:border-white/8 bg-slate-50/80 dark:bg-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Indexed Documents</span>
-              <span className="text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-0.5 rounded-full font-semibold ml-1">
+              <span className="text-xs text-slate-600 dark:text-slate-400 bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent px-2.5 py-0.5 rounded-full font-bold ml-1 shadow-2xs">
                 {documents.length}
               </span>
             </h2>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 transition-all text-xs font-semibold cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-300/80 dark:border-white/10 text-slate-700 dark:text-slate-300 transition-all text-xs font-semibold shadow-2xs cursor-pointer"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>Settings</span>
@@ -302,7 +302,7 @@ export default function AdminDashboard() {
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-white/5">
               {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/70 dark:hover:bg-white/3 transition-all">
+                <div key={doc.id} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/3 transition-all">
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
                       <FileText className="w-4 h-4 text-red-500 dark:text-red-400" />
@@ -334,9 +334,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Student Account Creation Section */}
-        <div className="bg-white dark:bg-white/5 border border-slate-200/90 dark:border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-xs">
+        <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-2xs">
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
@@ -369,14 +369,14 @@ export default function AdminDashboard() {
                     placeholder="student@uni.edu"
                     value={user.email}
                     onChange={(e) => handleUserChange(index, 'email', e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-transparent focus:outline-none focus:border-blue-600 dark:focus:border-blue-500/60 transition-all text-sm"
+                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-50 focus:bg-white border border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500/60 transition-all text-sm"
                   />
                   <input
                     type="password"
                     placeholder="Initial Password"
                     value={user.password}
                     onChange={(e) => handleUserChange(index, 'password', e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-transparent focus:outline-none focus:border-blue-600 dark:focus:border-blue-500/60 transition-all text-sm"
+                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-50 focus:bg-white border border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500/60 transition-all text-sm"
                   />
                 </div>
               ))}
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={handleAddUserRow}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
               >
                 + Add Another User
               </button>

@@ -116,7 +116,7 @@ export default function Chat() {
   ];
 
   return (
-    <div className="h-screen w-full flex bg-slate-50 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-200 overflow-hidden relative transition-colors duration-200">
+    <div className="h-screen w-full flex bg-slate-100 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-200 overflow-hidden relative transition-colors duration-200">
       
       {/* Mobile Backdrop */}
       {sidebarOpen && (
@@ -127,7 +127,7 @@ export default function Chat() {
       )}
 
       {/* Sidebar Drawer */}
-      <aside className={`fixed md:relative z-40 h-full w-72 flex flex-col bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-white/5 shrink-0 transition-transform duration-300 ease-in-out shadow-lg md:shadow-none ${
+      <aside className={`fixed md:relative z-40 h-full w-72 flex flex-col bg-slate-50 dark:bg-[#111827] border-r border-slate-200 dark:border-white/5 shrink-0 transition-transform duration-300 ease-in-out shadow-lg md:shadow-none ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Brand */}
@@ -156,7 +156,7 @@ export default function Chat() {
           <button
             id="new-chat-btn"
             onClick={startNewChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-all border border-slate-200 dark:border-white/5 shadow-xs cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-all border border-slate-300/80 dark:border-white/5 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>New conversation</span>
@@ -219,14 +219,14 @@ export default function Chat() {
           <div className="flex gap-2 pt-1">
             <button 
               onClick={() => setShowPasswordModal(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-colors text-xs font-medium cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-transparent transition-colors text-xs font-semibold shadow-2xs cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5" />
               <span>Password</span>
             </button>
             <button 
               onClick={logout}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors text-xs font-medium cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-transparent transition-colors text-xs font-semibold shadow-2xs cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Log out</span>
@@ -236,9 +236,9 @@ export default function Chat() {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 dark:bg-[#0B0F19]">
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-100/80 dark:bg-[#0B0F19]">
         {/* Top Navbar */}
-        <header className="flex items-center justify-between px-4 md:px-8 py-3.5 border-b border-slate-200/80 dark:border-white/5 bg-white/70 dark:bg-[#0B0F19]/80 backdrop-blur-md shrink-0 transition-colors">
+        <header className="flex items-center justify-between px-4 md:px-8 py-3.5 border-b border-slate-200 dark:border-white/5 bg-white/95 dark:bg-[#0B0F19]/80 backdrop-blur-md shrink-0 transition-colors shadow-2xs">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setSidebarOpen(true)} 
@@ -259,7 +259,7 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-full border border-slate-200/80 dark:border-white/5">
+            <span className="hidden sm:inline-flex text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-full border border-slate-300/80 dark:border-white/5">
               Groq OSS · Gemini
             </span>
             <ThemeToggle showLabel={false} />
@@ -281,20 +281,20 @@ export default function Chat() {
               </p>
 
               {/* Starter Question Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-left">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full text-left">
                 {promptSuggestions.map((item, idx) => (
                   <button
                     key={idx}
                     onClick={() => setInput(item.desc)}
-                    className="p-3.5 rounded-2xl bg-white dark:bg-white/5 hover:bg-blue-50/50 dark:hover:bg-white/10 border border-slate-200/80 dark:border-white/10 transition-all hover:border-blue-300 dark:hover:border-blue-500/30 hover:-translate-y-0.5 shadow-xs hover:shadow-sm cursor-pointer group"
+                    className="p-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-blue-50/50 dark:hover:bg-white/10 border border-slate-200/90 dark:border-white/10 transition-all hover:border-blue-400 dark:hover:border-blue-500/30 hover:-translate-y-0.5 shadow-xs hover:shadow-md cursor-pointer group"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{item.title}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{item.title}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 border border-slate-200/70 dark:border-transparent">
                         {item.tag}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors leading-relaxed">
                       {item.desc}
                     </p>
                   </button>
@@ -322,15 +322,15 @@ export default function Chat() {
               <div className={`max-w-3xl ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1 min-w-0`}>
                 <div className={`px-5 py-4 rounded-2xl text-sm leading-relaxed relative group ${
                   msg.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-tr-xs shadow-md shadow-blue-600/10'
-                    : 'bg-white dark:bg-white/5 border border-slate-200/90 dark:border-white/10 text-slate-800 dark:text-slate-200 rounded-tl-xs shadow-xs'
+                    ? 'bg-blue-600 text-white rounded-tr-xs shadow-md shadow-blue-600/15'
+                    : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 rounded-tl-xs shadow-sm'
                 }`}>
                   {/* Markdown Renderer with Table and Syntax support */}
                   <div className={`prose prose-sm max-w-none ${
                     msg.role === 'user'
                       ? 'prose-invert text-white'
                       : 'prose-slate dark:prose-invert'
-                  } prose-headings:font-bold prose-headings:tracking-tight prose-table:border prose-table:border-slate-200 dark:prose-table:border-white/10 prose-th:bg-slate-100/70 dark:prose-th:bg-white/5 prose-th:p-2 prose-td:p-2 prose-td:border prose-td:border-slate-200 dark:prose-td:border-white/10`}>
+                  } prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:tracking-tight prose-table:border prose-table:border-slate-300 dark:prose-table:border-white/10 prose-th:bg-slate-100 dark:prose-th:bg-white/5 prose-th:p-2.5 prose-td:p-2.5 prose-td:border prose-td:border-slate-200 dark:prose-td:border-white/10`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {msg.content}
                     </ReactMarkdown>
@@ -342,7 +342,7 @@ export default function Chat() {
                       type="button"
                       title="Copy response"
                       onClick={() => handleCopy(msg.content, idx)}
-                      className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-500 dark:text-slate-300 transition-all cursor-pointer"
+                      className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-500 dark:text-slate-300 transition-all cursor-pointer shadow-2xs"
                     >
                       {copiedIndex === idx ? (
                         <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -356,13 +356,13 @@ export default function Chat() {
                 {/* Grounding Citations */}
                 {msg.citations && msg.citations.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 mt-1.5 px-1">
-                    <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mr-1 flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-500 mr-1 flex items-center gap-1">
                       <FileText className="w-3 h-3" /> Sources:
                     </span>
                     {[...new Map(msg.citations.map(c => [c.source_file, c])).values()].map((c, i) => (
                       <span 
                         key={i} 
-                        className="text-xs px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-400 font-medium inline-flex items-center gap-1.5 shadow-2xs"
+                        className="text-xs px-2.5 py-1 rounded-full bg-amber-100/80 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 text-amber-950 dark:text-amber-400 font-semibold inline-flex items-center gap-1.5 shadow-2xs"
                       >
                         📄 {c.source_file} {c.page_number ? `(p. ${c.page_number})` : ''}
                       </span>
@@ -376,12 +376,12 @@ export default function Chat() {
           {/* Thinking / Searching Pipeline Indicator */}
           {loading && (
             <div className="flex gap-3 md:gap-4 items-start">
-              <div className="shrink-0 w-8 h-8 rounded-xl bg-emerald-600/10 dark:bg-emerald-600/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <div className="shrink-0 w-8 h-8 rounded-xl bg-emerald-600/10 dark:bg-emerald-600/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
                 <Bot className="w-4 h-4 animate-pulse" />
               </div>
-              <div className="px-5 py-3.5 rounded-2xl rounded-tl-xs bg-white dark:bg-white/5 border border-slate-200/90 dark:border-white/10 shadow-xs flex items-center gap-3">
+              <div className="px-5 py-3.5 rounded-2xl rounded-tl-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center gap-3">
                 <Loader2 className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin" />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Routing question & reviewing verified campus documents…
                 </span>
               </div>
@@ -392,7 +392,7 @@ export default function Chat() {
         </div>
 
         {/* Input Bar Dock */}
-        <div className="px-4 md:px-12 lg:px-28 py-4 border-t border-slate-200/80 dark:border-white/5 bg-white/80 dark:bg-[#0B0F19]/90 backdrop-blur-md shrink-0">
+        <div className="px-4 md:px-12 lg:px-28 py-4 border-t border-slate-200 dark:border-white/5 bg-white/95 dark:bg-[#0B0F19]/90 backdrop-blur-md shrink-0 shadow-lg shadow-slate-200/50 dark:shadow-none">
           <form onSubmit={sendMessage} className="relative max-w-4xl mx-auto">
             <input
               id="chat-input"
@@ -400,7 +400,7 @@ export default function Chat() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about admissions, fee schedules, courses, regulations…"
               disabled={loading}
-              className="w-full px-5 pr-14 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-transparent focus:outline-none focus:border-blue-600 dark:focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm shadow-xs disabled:opacity-60"
+              className="w-full px-5 pr-14 py-3.5 bg-slate-100 hover:bg-slate-50 focus:bg-white border border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-500 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm shadow-xs disabled:opacity-60"
             />
             <button
               type="submit"
