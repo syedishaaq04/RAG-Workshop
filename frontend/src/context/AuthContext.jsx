@@ -35,11 +35,13 @@ export const AuthProvider = ({ children }) => {
     
     const { data } = await api.post('/api/auth/login', formData);
     localStorage.setItem('token', data.access_token);
+    sessionStorage.removeItem('campus_nexus_active_chat_id');
     setUser({ email: data.email, role: data.role });
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('campus_nexus_active_chat_id');
     setUser(null);
   };
 

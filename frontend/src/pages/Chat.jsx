@@ -38,9 +38,23 @@ export default function Chat() {
     try {
       const { data } = await api.get('/api/chat/history');
       setConversations(data);
-      if (data.length > 0 && !preserveActive && !activeChatId) {
-        setActiveChatId(data[0].id);
-        setMessages(data[0].messages);
+      if (preserveActive) return;
+
+      const sessionChatId = sessionStorage.getItem('campus_nexus_active_chat_id');
+      if (sessionChatId) {
+        const matchingChat = data.find((c) => c.id === sessionChatId);
+        if (matchingChat) {
+          setActiveChatId(matchingChat.id);
+          setMessages(matchingChat.messages);
+        } else {
+          sessionStorage.removeItem('campus_nexus_active_chat_id');
+          setActiveChatId(null);
+          setMessages([]);
+        }
+      } else {
+        // Fresh start: maintain new conversation window with starter prompts
+        setActiveChatId(null);
+        setMessages([]);
       }
     } catch (err) {
       console.error('Failed to load history', err);
@@ -50,6 +64,7 @@ export default function Chat() {
   };
 
   const startNewChat = () => {
+    sessionStorage.removeItem('campus_nexus_active_chat_id');
     setActiveChatId(null);
     setMessages([]);
     setSidebarOpen(false);
@@ -69,6 +84,7 @@ export default function Chat() {
   };
 
   const selectConversation = (conv) => {
+    sessionStorage.setItem('campus_nexus_active_chat_id', conv.id);
     setActiveChatId(conv.id);
     setMessages(conv.messages);
     setSidebarOpen(false);
@@ -95,6 +111,7 @@ export default function Chat() {
         chat_id: activeChatId,
         question,
       });
+      sessionStorage.setItem('campus_nexus_active_chat_id', data.chat_id);
       setActiveChatId(data.chat_id);
       setMessages((prev) => [...prev, data.message]);
       fetchHistory(true);
@@ -268,7 +285,16 @@ export default function Chat() {
 
         {/* Message Thread */}
         <div className="flex-1 overflow-y-auto px-4 md:px-12 lg:px-28 py-6 space-y-6">
-          {messages.length === 0 && !loading && (
+          {loadingHistory && sessionStorage.getItem('campus_nexus_active_chat_id') ? (
+            <div className="h-full flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Restoring session conversation…
+                </span>
+              </div>
+            </div>
+          ) : messages.length === 0 && !loading ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-12 max-w-xl mx-auto">
               <div className="w-16 h-16 rounded-2xl bg-blue-600/10 dark:bg-blue-600/20 border border-blue-500/20 dark:border-blue-500/30 flex items-center justify-center mb-4 shadow-sm">
                 <BookMarked className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -301,7 +327,7 @@ export default function Chat() {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Render Messages */}
           {messages.map((msg, idx) => (
