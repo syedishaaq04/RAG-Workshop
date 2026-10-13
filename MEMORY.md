@@ -38,8 +38,9 @@ The backend executes a 6-stage intelligent pipeline for every query:
 6. **Citation Reviewer & Revisor:** Ensures all factual claims are grounded and cited before finalizing the output.
 
 ### 4. Frontend Application (React)
+- **Theming & Aesthetics:** Fully responsive Dark and Light themes powered by TailwindCSS v4 `@custom-variant dark`, `ThemeContext`, and native View Transitions with localStorage persistence.
 - **Admin Dashboard:** Interface for uploading and managing university knowledge base documents (PDFs, Docs, Text, CSV) and bulk creating new student accounts.
-- **Student Chat:** Premium, responsive UI allowing students to ask questions, view chat history, and see explicit citations. Now features a mobile-responsive sidebar drawer for smaller screens.
+- **Student Chat:** Premium, responsive UI allowing students to ask questions, view chat history, copy answers to clipboard, and see explicit citations. Features mobile-responsive sidebar drawer and starter prompt cards.
 - **Guest Mode:** Non-authenticated users can use a temporary guest login with an ephemeral chat history.
 
 ## Deployment Details
